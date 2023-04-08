@@ -45,6 +45,7 @@
 # Feel free to modify this file to suit your needs.
 ---
 version: '3.8'
+
 x-airflow-common:
   &airflow-common
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
@@ -83,8 +84,34 @@ x-airflow-common:
       condition: service_healthy
     postgres:
       condition: service_healthy
+    mysql:
+      condition: service_healthy
 
 services:
+  mysql: 
+    image: mysql:latest
+    restart: always
+    volumes:
+      - mysql-db-volume:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_USER: "user"
+      MYSQL_PASSWORD: "password"
+      MYSQL_DATABASE: "database"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 5
+    ports:
+      - "3306:3306"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8181:8080"
+
   postgres:
     image: postgres:13
     environment:
@@ -296,3 +323,4 @@ services:
 
 volumes:
   postgres-db-volume:
+  mysql-db-volume:
