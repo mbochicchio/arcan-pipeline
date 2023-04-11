@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS ArcanVersion (
     id int NOT NULL AUTO_INCREMENT,
-    date_of_release timestamp,
+    date_of_release datetime,
     version varchar(255) UNIQUE,
     PRIMARY KEY (id)
 );
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS Project (
 
 CREATE TABLE IF NOT EXISTS Version (
     id int NOT NULL AUTO_INCREMENT,
-    id_commit varchar(255),
-    date_commit timestamp,
+    id_github varchar(255),
+    date datetime,
     id_project int,
     PRIMARY KEY (id),
     FOREIGN KEY (id_project) REFERENCES Project(id) ON DELETE CASCADE
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS Version (
 
 CREATE TABLE IF NOT EXISTS DependencyGraph (
     id int NOT NULL AUTO_INCREMENT,
-    date_parsing timestamp,
+    date_parsing datetime,
     file_result blob,
     project_version int,
     PRIMARY KEY (id),
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS DependencyGraph (
 
 CREATE TABLE IF NOT EXISTS Analysis (
     id int NOT NULL AUTO_INCREMENT,
-    date_analysis timestamp,
+    date_analysis datetime,
     file_result blob,
     project_version int,
     arcan_version int,
