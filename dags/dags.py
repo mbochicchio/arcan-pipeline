@@ -1,7 +1,7 @@
 import pendulum
 from airflow.decorators import dag, task
-import mySqlRepository
 import function
+from gateway import MySqlGateway
 
 @dag(
     schedule=None,
@@ -13,13 +13,21 @@ def pipeline():
 
     @task()
     def get_project_list():
-        project_list = mySqlRepository.get_projects_list()
+        gw = MySqlGateway()
+        project_list = gw.get_projects_list()
         return project_list
     
     @task()
     def filter_project_versions(project: dict):
         function.filter_project_versions(project)
 
-    filter_project_versions.expand(project=get_project_list())
+    @task()
+    def filter_project_versions(project: dict):
+        function.filter_project_versions(project)
+
+    project_list = get_project_list()
+    filter_project_versions.expand(project=project_list)
+    
+    
 
 pipeline()

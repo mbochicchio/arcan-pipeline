@@ -1,15 +1,17 @@
-import mySqlRepository
+from gateway import MySqlGateway
 import gitHubRepository
 import math
 
 def filter_project_versions(project: dict):
-    last_version_analyzed = mySqlRepository.get_last_version(project['id'])
+
+    gw = MySqlGateway()
+    last_version_analyzed = gw.get_last_version(project['id'])
     version_list = gitHubRepository.get_version_list(project)
 
     if (len(version_list) == 0):
         last_commit = gitHubRepository.get_last_commit(project)
         if (last_commit and ((not last_version_analyzed) or (last_version_analyzed['id_github'] != str(last_commit['id_github'])))):
-            mySqlRepository.add_version(last_commit)
+            gw.add_version(last_commit)
     else:
         if last_version_analyzed:
             index = 0
@@ -29,4 +31,4 @@ def filter_project_versions(project: dict):
             version_list = version_list[::step]
             version_list.reverse()
             for item in version_list:
-                mySqlRepository.add_version(item)
+                gw.add_version(item)

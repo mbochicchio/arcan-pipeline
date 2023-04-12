@@ -11,7 +11,7 @@ def get_version_list(project: dict):
         version_list_filtered = []
         version_list = json.loads(response.content)
         for item in version_list:
-            item_filtered = model.version(None, item['id'], item['published_at'], project['id'])
+            item_filtered = model.version(None, item['tag_name'], item['published_at'], project['id'])
             version_list_filtered.append(item_filtered)
     return version_list_filtered
 
