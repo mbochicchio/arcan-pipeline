@@ -1,9 +1,21 @@
 from gateway import MySqlGateway
 import gitHubRepository
+from datetime import datetime
 import math
+import model
 
-def filter_project_versions(project: dict):
 
+def get_project_list():
+    gw = MySqlGateway()
+    project_list = gw.get_projects_list()
+    return project_list
+
+def get_arcan_version():
+    gw = MySqlGateway()
+    arcan_version = gw.get_arcan_version()
+    return arcan_version
+
+def add_project_versions(project: dict):
     gw = MySqlGateway()
     last_version_analyzed = gw.get_last_version(project['id'])
     version_list = gitHubRepository.get_version_list(project)
@@ -32,3 +44,20 @@ def filter_project_versions(project: dict):
             version_list.reverse()
             for item in version_list:
                 gw.add_version(item)
+
+def get_version_list(project: dict, arcan_version:dict):
+    gw = MySqlGateway()
+    version_list = gw.get_versions_list(project=project, arcan_version=arcan_version) 
+    return version_list
+
+def create_dependency_graph(version:dict):
+    gw = MySqlGateway()
+    now = datetime.strptime(datetime.now(), "%Y-%m-%dT%H:%M:%SZ")
+    dependency_graph = model.dependency_graph(None, now, None, version['id'])
+    gw.add_dependency_graph(dependency_graph)
+
+def analyze_version(version:dict, arcan_version:dict):
+    gw = MySqlGateway()
+    now = datetime.strptime(datetime.now(), "%Y-%m-%dT%H:%M:%SZ")
+    analyzis = model.analysis(None, now, None, version['id'], arcan_version['id'])
+    gw.add_analysis(analyzis)

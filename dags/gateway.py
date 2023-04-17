@@ -2,6 +2,7 @@ from airflow.providers.mysql.hooks.mysql import MySqlHook
 from typing import List, Tuple
 from datetime import datetime
 import model
+import logging
 
 class MySqlGateway():
     def __init__(self):
@@ -33,7 +34,15 @@ class MySqlGateway():
         sql = "SELECT * FROM Version WHERE id_project=" + str(id_project) + " ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
-            return model.version(myresult[0][0], myresult[0][1], myresult[0][2], myresult[0][3])
+            return model.version(myresult[0][0], myresult[0][1], myresult[0][2], myresult[0][3], None, None)
+        else:
+            return None
+    
+    def get_arcan_version(self):
+        sql = "SELECT * FROM ArcanVersion ORDER BY id DESC LIMIT 0, 1"
+        myresult = self.__execute_query__(sql)
+        if len(myresult) > 0:
+            return model.arcan_version(myresult[0][0], myresult[0][1], myresult[0][2])
         else:
             return None
 
@@ -50,4 +59,23 @@ class MySqlGateway():
     def add_repository(self, repository: dict):
         sql = "INSERT INTO Repository (url_github, branch, username, password) VALUES (%s, %s, %s, %s)"
         data = (repository['url_github'], repository['branch'], repository['username'], repository['password'])
+        self.__execute_transaction__(sql, data)
+
+    def get_versions_list(self, project: dict, arcan_version:dict):
+        sql = "SELECT DISTINCT V.id, V.id_github, V.date, V.id_project, D.id FROM Version AS V LEFT JOIN DependencyGraph AS D ON D.project_version = V.id WHERE V.id_project =" + str(project['id']) + " AND NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = " + str(arcan_version['id']) + ")"
+        myresult = self.__execute_query__(sql)
+        version_list = []
+        if len(myresult) > 0:
+            for item in myresult:
+                version_list.append(model.version(item[0], item[1], str(item[2]), item[3], None, item[4]))
+        return version_list
+
+    def add_dependency_graph(self, dependency_graph:dict):
+        sql = "INSERT INTO DependencyGraph (id, date_parsing, file_result, project_version) VALUES (%s, %s, %s)"
+        data = (dependency_graph['date_parsing'], dependency_graph['file_result'], dependency_graph['project_version'])
+        self.__execute_transaction__(sql, data)
+
+    def add_analysis(self, analysis:dict):
+        sql = "INSERT INTO Analysis (id, date_analysis, file_result, project_version, arcan_version) VALUES (%s, %s, %s, %s)"
+        data = (analysis['date_analysis'], analysis['file_result'], analysis['project_version'], analysis['arcan_version'])
         self.__execute_transaction__(sql, data)
