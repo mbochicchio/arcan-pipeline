@@ -1,6 +1,6 @@
 import requests
 import json
-import model
+from utilitis import model
 
 base_url = "https://api.github.com"
 

@@ -1,8 +1,8 @@
-from gateway import MySqlGateway
-import gitHubRepository
+from utilitis.gateway import MySqlGateway
+from utilitis import gitHubRepository
 from datetime import datetime
 import math
-import model
+from utilitis import model
 
 
 def get_project_list():
@@ -31,9 +31,10 @@ def add_project_versions(project: dict):
                 find = False
                 len_version_list = len(version_list)
                 while index < len_version_list and not find:
-                    if str(version_list[0]['id_github']) == last_version_analyzed['id_github']:
+                    if str(version_list[index]['id_github']) == last_version_analyzed['id_github']:
                         find = True
-                    index +=1
+                    else:
+                        index += 1
             version_list = version_list[:index]
         
         number_of_version = len(version_list)
@@ -51,13 +52,24 @@ def get_version_list(project: dict, arcan_version:dict):
     return version_list
 
 def create_dependency_graph(version:dict):
-    gw = MySqlGateway()
-    now = datetime.strptime(datetime.now(), "%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     dependency_graph = model.dependency_graph(None, now, None, version['id'])
+    return dependency_graph
+
+def create_analysis(version:dict, arcan_version:dict):
+    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    analyzis = model.analysis(None, now, None, version['id'], arcan_version['id'])
+    return analyzis
+
+def save_dependency_graph(dependency_graph:dict):
+    gw = MySqlGateway()
     gw.add_dependency_graph(dependency_graph)
 
-def analyze_version(version:dict, arcan_version:dict):
+def save_analysis(analysis:dict):
     gw = MySqlGateway()
-    now = datetime.strptime(datetime.now(), "%Y-%m-%dT%H:%M:%SZ")
-    analyzis = model.analysis(None, now, None, version['id'], arcan_version['id'])
-    gw.add_analysis(analyzis)
+    gw.add_analysis(analysis)
+
+def get_dependency_graph(version:dict):
+    gw= MySqlGateway()
+    dependency_graph = gw.get_dependency_graph(version=version)
+    return dependency_graph

@@ -1,8 +1,7 @@
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from typing import List, Tuple
 from datetime import datetime
-import model
-import logging
+from utilitis import model
 
 class MySqlGateway():
     def __init__(self):
@@ -70,12 +69,20 @@ class MySqlGateway():
                 version_list.append(model.version(item[0], item[1], str(item[2]), item[3], None, item[4]))
         return version_list
 
-    def add_dependency_graph(self, dependency_graph:dict):
-        sql = "INSERT INTO DependencyGraph (id, date_parsing, file_result, project_version) VALUES (%s, %s, %s)"
-        data = (dependency_graph['date_parsing'], dependency_graph['file_result'], dependency_graph['project_version'])
+    def add_dependency_graph(self, dependency_graph: dict):
+        sql = "INSERT INTO DependencyGraph (date_parsing, file_result, project_version) VALUES (%s, %s, %s)"
+        data = (datetime.strptime(dependency_graph['date_parsing'], "%Y-%m-%dT%H:%M:%SZ"), dependency_graph['file_result'], dependency_graph['project_version'])
         self.__execute_transaction__(sql, data)
 
     def add_analysis(self, analysis:dict):
-        sql = "INSERT INTO Analysis (id, date_analysis, file_result, project_version, arcan_version) VALUES (%s, %s, %s, %s)"
-        data = (analysis['date_analysis'], analysis['file_result'], analysis['project_version'], analysis['arcan_version'])
+        sql = "INSERT INTO Analysis (date_analysis, file_result, project_version, arcan_version) VALUES (%s, %s, %s, %s)"
+        data = (datetime.strptime(analysis['date_analysis'], "%Y-%m-%dT%H:%M:%SZ"), analysis['file_result'], analysis['project_version'], analysis['arcan_version'])
         self.__execute_transaction__(sql, data)
+
+    def get_dependency_graph(self, version:dict):
+        sql = "SELECT * FROM DependencyGraph WHERE project_version=" + str(version['id'])
+        myresult = self.__execute_query__(sql)
+        if len(myresult) > 0:
+            return model.dependency_graph(myresult[0][0], str(myresult[0][1]), myresult[0][2], myresult[0][3])
+        else:
+            return None
