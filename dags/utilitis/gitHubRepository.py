@@ -22,3 +22,4 @@ def get_last_commit(project: dict):
         commit = json.loads(response.content)
         commit_filtered = model.version(None, commit['sha'], commit['commit']['committer']['date'], project['id'], None, None)
     return commit_filtered
+

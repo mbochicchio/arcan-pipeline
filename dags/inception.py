@@ -18,9 +18,8 @@ def inception():
     @task()
     def add_project_versions(project: dict):
         function.add_project_versions(project)
-        return project
 
     project_list=get_project_list()
-    project_list=add_project_versions.expand(project=project_list)
+    add_project_versions.expand(project=project_list)
  
 inception()
