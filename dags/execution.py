@@ -1,5 +1,5 @@
-from utilitis.factory_task_group import make_taskgroup
-from utilitis.function import get_arcan_version, get_project_list, get_version_list
+from utilities.factory_task_group import make_taskgroup
+from utilities.function import get_arcan_version, get_project_list, get_version_list
 from airflow import DAG
 import pendulum
 

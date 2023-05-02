@@ -2,7 +2,7 @@ from typing import List
 from airflow import DAG
 from airflow.utils.task_group import TaskGroup
 from airflow.decorators import task, task_group
-from utilitis import function
+from utilities import function
 import logging
 
 

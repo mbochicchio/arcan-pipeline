@@ -1,7 +1,7 @@
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from typing import List, Tuple
 from datetime import datetime
-from utilitis import model
+from utilities import model
 
 class MySqlGateway():
     def __init__(self):
@@ -28,6 +28,13 @@ class MySqlGateway():
             for item in myresult:
                 project_list.append(model.project(item[0], model.repository(item[3], item[4], item[5], item[6], item[7]), item[1], item[2]))
         return project_list
+
+    def get_project(self, id_project: int):
+        sql = "SELECT P.id, P.language, P.name, R.id, R.project_repository, R.branch, R.username, R.password FROM Project AS P JOIN Repository AS R ON P.id_repository = R.id WHERE P.id=" + str(id_project)
+        myresult = self.__execute_query__(sql)
+        if len(myresult) > 0:
+            return model.project(myresult[0], model.repository(myresult[3], myresult[4], myresult[5], myresult[6], myresult[7]), myresult[1], myresult[2])
+        return None
 
     def get_last_version(self, id_project: int):
         sql = "SELECT * FROM Version WHERE id_project=" + str(id_project) + " ORDER BY id DESC LIMIT 0, 1"

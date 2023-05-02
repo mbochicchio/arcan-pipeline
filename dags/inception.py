@@ -1,6 +1,6 @@
 import pendulum
 from airflow.decorators import dag, task
-from utilitis import function
+from utilities import function
 
 @dag(
     schedule=None,

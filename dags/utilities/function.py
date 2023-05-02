@@ -1,9 +1,10 @@
-from utilitis.gateway import MySqlGateway
-from utilitis import gitHubRepository
+from utilities.gateway import MySqlGateway
+from utilities import gitHubRepository
 from datetime import datetime
 import math
-from utilitis import model
-
+from utilities import model
+import subprocess
+import logging
 
 def get_project_list():
     gw = MySqlGateway()
@@ -54,9 +55,28 @@ def get_version_list(project: dict, arcan_version:dict):
 def create_dependency_graph(version:dict):
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     dependency_graph = model.dependency_graph(None, now, None, version['id'])
+
     return dependency_graph
 
 def create_analysis(version:dict, arcan_version:dict):
+    gw = MySqlGateway()
+    """project = gw.get_project(id_project=version['project_id'])
+    url = f"https://github.com/{project['name']}/tree/{version['id_github']}"""
+    
+
+    project_dir = str(version['id'])
+    url = "https://github.com/vinta/awesome-python.git"
+    cmd = f'docker run --rm -it -v .:/data arcan/arcan-cli:latest analyse -i /data/{project_dir} --remote {url} -o /data -l JAVA output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
+    
+    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
+
+    
+    print(f'Error: {error}')
+    print(f'Output: {output}')
+    print(f'Return code: {process.returncode}')
+
+    
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     analyzis = model.analysis(None, now, None, version['id'], arcan_version['id'])
     return analyzis
@@ -73,3 +93,5 @@ def get_dependency_graph(version:dict):
     gw= MySqlGateway()
     dependency_graph = gw.get_dependency_graph(version=version)
     return dependency_graph
+
+
