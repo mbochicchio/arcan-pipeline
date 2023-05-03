@@ -6,6 +6,9 @@ from utilities import model
 import subprocess
 import logging
 import docker
+import os
+
+WORKING_DIR   = '/opt/airflow/workdir' 
 
 def get_project_list():
     gw = MySqlGateway()
@@ -61,19 +64,23 @@ def create_dependency_graph(version:dict):
 
 def create_analysis(version:dict, arcan_version:dict):
     gw = MySqlGateway()
+    project = gw.get_project(id_project=version['id_project'])
+
+    #clone del repository e checkout    
+    project_dir = f"/projects/{project['name']}/{version['id']}"
+    clonedir_cmd = f"mkdir -p {project_dir}"
+    subprocess.run(clonedir_cmd, shell=True)
+
+    cmd_clone = f"git clone https://github.com/{project['name']}.git {project_dir} && git checkout {version['id_github']}"
+    result = subprocess.run(cmd_clone, shell=True, capture_output=True)
+    print(result.stdout)
+    print(result.stderr)
     
-    """
-    project = gw.get_project(id_project=version['project_id'])
-    url = f"https://github.com/{project['name']}/tree/{version['id_github']}
-
-    project_dir = str(version['id'])
-    url = "https://github.com/vinta/awesome-python.git"
-    cmd = f'docker run --rm -it -v .:/data arcan/arcan-cli:latest analyse -i /data/{project_dir} --remote {url} -o /data -l JAVA output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
-    """
-
-    client = docker.from_env()
-    print(client.containers.run("alpine", ["echo", "hello", "world"]))
-
+    #esecuzione analisi
+    #cmd = f'analyse -i {project_dir} -o /projects -l JAVA output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
+    #os.environ['DOCKER_HOST'] = 'tcp://host.docker.internal:2375'
+    #client = docker.from_env()
+    #client.containers.run("arcan/arcan-cli:latest", cmd, remove=True, volumes={'tmp-project': {'bind': '/projects', 'mode': 'rw'}})
 
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     analyzis = model.analysis(None, now, None, version['id'], arcan_version['id'])

@@ -173,6 +173,8 @@ services:
 
   airflow-worker:
     <<: *airflow-common
+    build: 
+      context: . 
     command: celery worker
     healthcheck:
       test:
@@ -189,7 +191,7 @@ services:
       DUMB_INIT_SETSID: "0"
     restart: always
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - tmp-project-worker:/projects
     extra_hosts: 
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -328,3 +330,4 @@ services:
 volumes:
   postgres-db-volume:
   mysql-db-volume:
+  tmp-project-worker:

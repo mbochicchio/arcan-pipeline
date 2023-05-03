@@ -33,7 +33,7 @@ class MySqlGateway():
         sql = "SELECT P.id, P.language, P.name, R.id, R.project_repository, R.branch, R.username, R.password FROM Project AS P JOIN Repository AS R ON P.id_repository = R.id WHERE P.id=" + str(id_project)
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
-            return model.project(myresult[0], model.repository(myresult[3], myresult[4], myresult[5], myresult[6], myresult[7]), myresult[1], myresult[2])
+            return model.project(myresult[0][0], model.repository(myresult[0][3], myresult[0][4], myresult[0][5], myresult[0][6], myresult[0][7]), myresult[0][1], myresult[0][2])
         return None
 
     def get_last_version(self, id_project: int):
