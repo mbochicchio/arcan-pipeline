@@ -67,9 +67,9 @@ def create_analysis(version:dict, arcan_version:dict):
     project = gw.get_project(id_project=version['id_project'])
 
     #clone del repository e checkout    
-    project_dir = f"/projects/{project['name']}/{version['id']}"
-    clonedir_cmd = f"mkdir -p {project_dir}"
-    subprocess.run(clonedir_cmd, shell=True)
+    project_dir = f"/opt/airflow/projects/{version['id']}"
+    mkdir_cmd = f"mkdir -p {project_dir}"
+    subprocess.run(mkdir_cmd, shell=True)
 
     cmd_clone = f"git clone https://github.com/{project['name']}.git {project_dir} && git checkout {version['id_github']}"
     result = subprocess.run(cmd_clone, shell=True, capture_output=True)
@@ -77,10 +77,10 @@ def create_analysis(version:dict, arcan_version:dict):
     print(result.stderr)
     
     #esecuzione analisi
-    #cmd = f'analyse -i {project_dir} -o /projects -l JAVA output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
-    #os.environ['DOCKER_HOST'] = 'tcp://host.docker.internal:2375'
-    #client = docker.from_env()
-    #client.containers.run("arcan/arcan-cli:latest", cmd, remove=True, volumes={'tmp-project': {'bind': '/projects', 'mode': 'rw'}})
+    cmd = f'analyse -i /projects/{version["id"]} -o /projects -l {project["language"]} output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
+    os.environ['DOCKER_HOST'] = 'tcp://host.docker.internal:2375'
+    client = docker.from_env()
+    client.containers.run("arcan/arcan-cli:latest", cmd, remove=False, volumes={'shared-volume': {'bind': '/projects', 'mode': 'rwo'}})
 
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     analyzis = model.analysis(None, now, None, version['id'], arcan_version['id'])
