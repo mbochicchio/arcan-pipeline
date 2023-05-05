@@ -13,36 +13,16 @@ def skip():
 @task.branch()
 def check(version: dict):
     if version['dependency_graph'] is None:
-        return str(version['id_project']) + "."+ str(version['id_project']) + "_" + str(version['id']) + ".parsing_version.create_dependency_graph"
+        return str(version['id_project']) + "."+ str(version['id_project']) + "_" + str(version['id']) + ".parsing_version"
     return str(version['id_project']) + "."+ str(version['id_project']) + "_" + str(version['id']) + ".skip"   
 
-@task_group()
+@task()
 def parsing_version(version: dict):
-    @task()
-    def create_dependency_graph(version: dict):
-        return function.create_dependency_graph(version)
-
-    @task()
-    def save_dependency_graph(dependency_graph: dict):
-        return function.save_dependency_graph(dependency_graph=dependency_graph)
-
-    save_dependency_graph(dependency_graph=create_dependency_graph(version=version))
+    return function.create_dependency_graph(version)
     
-@task_group()
+@task(trigger_rule='none_failed_min_one_success')
 def analyze_version(version:dict, arcan_version: dict):
-    @task()
-    def create_analysis(version:dict, arcan_version:dict, dependency_graph:dict):
-        return function.create_analysis(version, arcan_version)
-
-    @task()
-    def save_analysis(analysis:dict):
-        function.save_analysis(analysis=analysis)
-
-    @task(trigger_rule="none_failed_min_one_success")
-    def get_parsing(version:dict):
-        return function.get_dependency_graph(version)
-
-    save_analysis(analysis=create_analysis(version=version, arcan_version=arcan_version, dependency_graph=get_parsing(version=version)))
+    return function.create_analysis(version, arcan_version)
 
 def make_taskgroup(dag: DAG, version_list: List[dict], project: dict, arcan_version: dict) -> TaskGroup:
     group_id=str(project['id'])

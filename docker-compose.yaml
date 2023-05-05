@@ -336,6 +336,5 @@ volumes:
   postgres-db-volume:
   mysql-db-volume:
   shared-volume:
-    external: true
-    name: shared-volume
+
     

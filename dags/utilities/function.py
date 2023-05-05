@@ -57,8 +57,35 @@ def get_version_list(project: dict, arcan_version:dict):
     return version_list
 
 def create_dependency_graph(version:dict):
+    gw = MySqlGateway()
+    project = gw.get_project(id_project=version['id_project'])
+
+    #clone del repository e checkout    
+    project_dir = f"/opt/airflow/projects/{version['id']}"
+    mkdir_cmd = f"mkdir -p {project_dir}"
+    subprocess.run(mkdir_cmd, shell=True)
+
+    cmd_clone = f"git clone https://github.com/{project['name']}.git {project_dir} && git --git-dir={project_dir}/.git checkout {version['id_github']}"
+    result = subprocess.run(cmd_clone, shell=True, capture_output=True)
+    print(result.stdout)
+    print(result.stderr)
+    
+    #esecuzione creazione dependency_graph
+    cmd = f'analyse -i /projects/{version["id"]} -o /projects -l {project["language"]} output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
+    os.environ['DOCKER_HOST'] = 'tcp://host.docker.internal:2375'
+    client = docker.from_env()
+    client.containers.run("arcan/arcan-cli:latest", cmd, remove=True, volumes={'arcan-pipeline_shared-volume': {'bind': '/projects', 'mode': 'rw'}})
+
+    #salvataggio dependency_graph
+    #with open("nome_file", "rb") as file:
+    #    file_result = file.read()
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     dependency_graph = model.dependency_graph(None, now, None, version['id'])
+    save_dependency_graph(dependency_graph=dependency_graph)
+
+    #rimozione cartella
+    rmdir_cmd = f"rm -r {project_dir}"
+    subprocess.run(rmdir_cmd, shell=True)
 
     return dependency_graph
 
@@ -71,20 +98,29 @@ def create_analysis(version:dict, arcan_version:dict):
     mkdir_cmd = f"mkdir -p {project_dir}"
     subprocess.run(mkdir_cmd, shell=True)
 
-    cmd_clone = f"git clone https://github.com/{project['name']}.git {project_dir} && git checkout {version['id_github']}"
+    cmd_clone = f"git clone https://github.com/{project['name']}.git {project_dir} && git --git-dir={project_dir}/.git checkout {version['id_github']}"
     result = subprocess.run(cmd_clone, shell=True, capture_output=True)
     print(result.stdout)
     print(result.stderr)
     
     #esecuzione analisi
-    cmd = f'analyse -i /projects/{version["id"]} -o /projects -l {project["language"]} output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
+    cmd = f'analyse -i /projects/{version["id"]} -o /projects -l {project["language"]} --all output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
     os.environ['DOCKER_HOST'] = 'tcp://host.docker.internal:2375'
     client = docker.from_env()
-    client.containers.run("arcan/arcan-cli:latest", cmd, remove=False, volumes={'shared-volume': {'bind': '/projects', 'mode': 'rwo'}})
+    client.containers.run("arcan/arcan-cli:latest", cmd, remove=True, volumes={'arcan-pipeline_shared-volume': {'bind': '/projects', 'mode': 'rw'}})
 
+    #salvataggio analisi
+    #with open("nome_file", "rb") as file:
+    #    file_result = file.read()
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    analyzis = model.analysis(None, now, None, version['id'], arcan_version['id'])
-    return analyzis
+    analysis = model.analysis(None, now, None, version['id'], arcan_version['id'])
+    save_analysis(analysis=analysis)
+
+    #rimozione cartella
+    rmdir_cmd = f"rm -r {project_dir}"
+    subprocess.run(rmdir_cmd, shell=True)
+
+    return analysis
 
 def save_dependency_graph(dependency_graph:dict):
     gw = MySqlGateway()
