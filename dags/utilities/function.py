@@ -8,7 +8,6 @@ import logging
 import docker
 import os
 
-WORKING_DIR   = '/opt/airflow/workdir' 
 
 def get_project_list():
     gw = MySqlGateway()
@@ -23,33 +22,23 @@ def get_arcan_version():
 def add_project_versions(project: dict):
     gw = MySqlGateway()
     last_version_analyzed = gw.get_last_version(project['id'])
-    version_list = gitHubRepository.get_version_list(project)
+    version_list = gitHubRepository.get_version_list(project, last_version_analyzed)
 
     if (len(version_list) == 0):
         last_commit = gitHubRepository.get_last_commit(project)
         if (last_commit and ((not last_version_analyzed) or (last_version_analyzed['id_github'] != str(last_commit['id_github'])))):
             gw.add_version(last_commit)
     else:
-        if last_version_analyzed:
-            index = 0
-            if (last_version_analyzed['id_github'] != str(version_list[0]['id_github'])):
-                find = False
-                len_version_list = len(version_list)
-                while index < len_version_list and not find:
-                    if str(version_list[index]['id_github']) == last_version_analyzed['id_github']:
-                        find = True
-                    else:
-                        index += 1
-            version_list = version_list[:index]
-        
         number_of_version = len(version_list)
+        if last_version_analyzed and (last_version_analyzed['id_github'] == version_list[number_of_version-1]['id_github']):
+            version_list.pop()
         if (number_of_version != 0):
             max_number_of_version_to_consider = math.floor(6*math.log10(number_of_version+1))
-            step = math.ceil(number_of_version / max_number_of_version_to_consider)
-            version_list = version_list[::step]
-            version_list.reverse()
-            for item in version_list:
-                gw.add_version(item)
+            if max_number_of_version_to_consider < number_of_version:
+                indices = [int(i * (number_of_version-1) / (max_number_of_version_to_consider-1)) for i in range(max_number_of_version_to_consider)]
+                version_list = [version_list[i] for i in indices]
+            for version in reversed(version_list):
+                gw.add_version(version)
 
 def get_version_list(project: dict, arcan_version:dict):
     gw = MySqlGateway()
@@ -130,9 +119,5 @@ def save_analysis(analysis:dict):
     gw = MySqlGateway()
     gw.add_analysis(analysis)
 
-def get_dependency_graph(version:dict):
-    gw= MySqlGateway()
-    dependency_graph = gw.get_dependency_graph(version=version)
-    return dependency_graph
 
 
