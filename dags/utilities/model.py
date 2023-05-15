@@ -1,9 +1,9 @@
-def version(id, id_github, date, id_project, last_analysis, dependency_graph):
+def version(id, id_github, date, project, last_analysis, dependency_graph):
     return {
       'id': id,
       'id_github': id_github,
       'date': date,
-      'id_project': id_project,
+      'project': project,
       'last_analysis': last_analysis,
       'dependency_graph': dependency_graph
     }

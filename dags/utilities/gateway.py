@@ -29,13 +29,6 @@ class MySqlGateway():
                 project_list.append(model.project(item[0], model.repository(item[3], item[4], item[5], item[6], item[7]), item[1], item[2]))
         return project_list
 
-    def get_project(self, id_project: int):
-        sql = "SELECT P.id, P.language, P.name, R.id, R.project_repository, R.branch, R.username, R.password FROM Project AS P JOIN Repository AS R ON P.id_repository = R.id WHERE P.id=" + str(id_project)
-        myresult = self.__execute_query__(sql)
-        if len(myresult) > 0:
-            return model.project(myresult[0][0], model.repository(myresult[0][3], myresult[0][4], myresult[0][5], myresult[0][6], myresult[0][7]), myresult[0][1], myresult[0][2])
-        return None
-
     def get_last_version(self, id_project: int):
         sql = "SELECT * FROM Version WHERE id_project=" + str(id_project) + " ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
@@ -54,7 +47,7 @@ class MySqlGateway():
 
     def add_version(self, version: dict):
         sql = "INSERT INTO Version (id_github, date, id_project) VALUES (%s, %s, %s)"
-        data = (version['id_github'], datetime.strptime(version['date'], "%Y-%m-%dT%H:%M:%SZ"), version['id_project'])
+        data = (version['id_github'], datetime.strptime(version['date'], "%Y-%m-%dT%H:%M:%SZ"), version['project'])
         self.__execute_transaction__(sql, data)
 
     def add_project(self, project: dict):
@@ -73,7 +66,7 @@ class MySqlGateway():
         version_list = []
         if len(myresult) > 0:
             for item in myresult:
-                version_list.append(model.version(item[0], item[1], str(item[2]), item[3], None, item[4]))
+                version_list.append(model.version(item[0], item[1], str(item[2]), project, None, item[4]))
         return version_list
 
     def add_dependency_graph(self, dependency_graph: dict):
