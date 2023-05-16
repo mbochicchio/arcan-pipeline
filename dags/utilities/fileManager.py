@@ -1,7 +1,6 @@
 import subprocess
 import os
 
-
 def create_project_dir(version: dict):
     project_dir = f"/opt/airflow/projects/{version['id']}"
     mkdir_cmd = f"mkdir -p {project_dir}"
@@ -30,3 +29,8 @@ def clone_and_checkout_repository(version: dict, project_dir: str):
     result = subprocess.run(cmd_clone, shell=True, capture_output=True)
     print(result.stdout)
     print(result.stderr)
+
+def get_blob_from_file(path: str):
+    with open(path, "rb") as file:
+        blob = file.read()
+    return blob

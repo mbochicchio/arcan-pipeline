@@ -33,7 +33,7 @@ class MySqlGateway():
         sql = "SELECT * FROM Version WHERE id_project=" + str(id_project) + " ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
-            return model.version(myresult[0][0], myresult[0][1], myresult[0][2], myresult[0][3], None, None)
+            return model.version(myresult[0][0], myresult[0][1], str(myresult[0][2]), myresult[0][3], None, None)
         else:
             return None
     

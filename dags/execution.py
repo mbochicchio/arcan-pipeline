@@ -1,9 +1,9 @@
 from airflow import DAG
 from airflow.utils.task_group import TaskGroup
 from airflow.decorators import task, task_group
-import pendulum
+from pendulum import datetime, duration
 from typing import List
-from utilities import tasksFunctions
+from utilities import tasksFunctions, constants
 import logging
 
 @task()
@@ -20,23 +20,23 @@ def check(version: dict):
 @task_group()
 def parsing_version(version: dict):
 
-    @task()
+    @task(retries= constants.DOCKER_RETRIES, retry_delay= constants.DOCKER_RETRY_DELAY)
     def create_dependency_graph(version: dict):
         return tasksFunctions.create_dependency_graph(version)
 
-    @task()
+    @task(retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY, )
     def save_dependency_graph(dependency_graph: dict):
         return tasksFunctions.save_dependency_graph(dependency_graph=dependency_graph)
     
     save_dependency_graph(dependency_graph=create_dependency_graph(version=version)) 
 
-@task_group
+@task_group()
 def analyze_version(version:dict, arcan_version: dict):
-    @task(trigger_rule='none_failed_min_one_success')
+    @task(trigger_rule='none_failed_min_one_success', retries= constants.DOCKER_RETRIES, retry_delay= constants.DOCKER_RETRY_DELAY)
     def create_analysis(version:dict, arcan_version:dict):    
         return tasksFunctions.create_analysis(version, arcan_version)
 
-    @task()
+    @task(retries= constants.MYSQL_RETRIES, retry_delay= constants.MYSQL_RETRY_DELAY)
     def save_analysis(analysis:dict):
         tasksFunctions.save_analysis(analysis=analysis)
 
@@ -57,14 +57,19 @@ def make_taskgroup(dag: DAG, version_list: List[dict], project: dict, arcan_vers
 
 with DAG('execution', 
     schedule=None,
-    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    start_date=datetime(2021, 1, 1, tz="UTC"),
     catchup=False,
     tags=[],
+    default_args={
+        'owner': constants.DEFAULT_OWNER,
+        "retries": constants.DEFAULT_RETRIES,
+        "retry_delay": constants.DEFAULT_RETRY_DELAY,
+        "retry_exponential_backoff": constants.DEFAULT_RETRY_EXPONENTIAL_BACKOFF,
+        "max_retry_delay": constants.DEFAULT_MAX_RETRY_DELAY,
+    },
 ) as execution:
-    
     arcan_version = tasksFunctions.get_arcan_version()
     project_list = tasksFunctions.get_project_list()
-
     for project in project_list:
         version_list = tasksFunctions.get_version_list(project=project, arcan_version=arcan_version)
         group = make_taskgroup(dag=execution, version_list=version_list, project=project, arcan_version=arcan_version)
