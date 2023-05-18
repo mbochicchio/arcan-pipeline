@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS Version (
 CREATE TABLE IF NOT EXISTS DependencyGraph (
     id int NOT NULL AUTO_INCREMENT,
     date_parsing datetime,
-    file_result blob,
+    file_result longblob,
     project_version int,
     PRIMARY KEY (id),
     FOREIGN KEY (project_version) REFERENCES Version(id) ON DELETE CASCADE
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS DependencyGraph (
 CREATE TABLE IF NOT EXISTS Analysis (
     id int NOT NULL AUTO_INCREMENT,
     date_analysis datetime,
-    file_result blob,
+    file_result longblob,
     project_version int,
     arcan_version int,
     PRIMARY KEY (id),

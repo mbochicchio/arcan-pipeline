@@ -1,36 +1,77 @@
 import subprocess
 import os
+import json
+from utilities.customException import ArcanOutputNotFoundException, MakeDirException, DeleteDirException, CloneRepositoryException, CheckoutRepositoryException
 
-def create_project_dir(version: dict):
-    project_dir = f"/opt/airflow/projects/{version['id']}"
-    mkdir_cmd = f"mkdir -p {project_dir}"
-    subprocess.run(mkdir_cmd, shell=True)
+def get_project_path(project_id: str):
+    return f"/opt/airflow/projects/{project_id}"
 
-def delete_project_dir(path: str):
-    rmdir_cmd = f"rm -r {path}"
-    subprocess.run(rmdir_cmd, shell=True)
+def get_output_path(output_type: str, project_id: str):
+    return f"/opt/airflow/projects/{output_type}/arcanOutput/{project_id}"
 
-def delete_output_dir(path: str):
-    directory_path = path[:path.rfind('/')]
-    rmdir_cmd = f"rm -r {directory_path}"
-    subprocess.run(rmdir_cmd, shell=True)    
+def create_dir(path: str):
+    #try:
+        if os.path.exists(path):
+            delete_dir(path)
+        mkdir_cmd = f"mkdir -p {path}"
+        output = subprocess.run(mkdir_cmd, shell=True, capture_output=True)
+        print("ok", output.stdout)
+        print("error", output.stderr)
+    #except subprocess.CalledProcessError as e:
+    #    raise MakeDirException(e)
 
-def find_result_path(version:dict, result_type: str):
-    result_path = f"/opt/airflow/projects/{result_type}/arcanOutput/{version['id']}"
+def delete_dir(path: str):
+    #try: 
+        if os.path.exists(path):
+            rmdir_cmd = f"rm -r {path}"
+            output = subprocess.run(rmdir_cmd, shell=True, capture_output=True)
+            print("ok", output.stdout)
+            print("error", output.stderr)
+    #except subprocess.CalledProcessError as e:
+    #    raise DeleteDirException(e)       
+        
+def get_output_file_path(output_type: str, project_id:dict):
+    result_path = get_output_path(output_type=output_type, project_id=project_id)
     for file_name in os.listdir(result_path):
-        if file_name.startswith(result_type):
+        if file_name.startswith("dependency-graph-"):
             result_path += f"/{file_name}"
-            break
+            return result_path
     else:
-        print("Nessun file trovato con il prefisso specificato.")
+        raise ArcanOutputNotFoundException(f"{output_type} file not found")
 
-def clone_and_checkout_repository(version: dict, project_dir: str):
-    cmd_clone = f"git clone https://github.com/{version['project']['name']}.git {project_dir} && git --git-dir={project_dir}/.git checkout {version['id_github']}"
-    result = subprocess.run(cmd_clone, shell=True, capture_output=True)
-    print(result.stdout)
-    print(result.stderr)
+def clone_repository(project_name: str, project_path: str):
+    #try:
+        cmd_clone = f"git clone https://github.com/{project_name}.git {project_path}"
+        output = subprocess.run(cmd_clone, shell=True, capture_output=True)
+        print("ok", output.stdout)
+        print("error", output.stderr)
+    #except subprocess.CalledProcessError() as e:
+    #    raise CloneRepositoryException(e)
 
-def get_blob_from_file(path: str):
-    with open(path, "rb") as file:
-        blob = file.read()
-    return blob
+def checkout_repository(version: str, project_dir: str):
+    #try: 
+        cmd_clone = f"git --git-dir={project_dir}/.git checkout --force {version}"
+        output = subprocess.run(cmd_clone, shell=True, capture_output=True)
+        print("ok", output.stdout)
+        print("error", output.stderr)
+    #except subprocess.CalledProcessError as e:
+    #    raise CheckoutRepositoryException(e)  
+
+def get_blob_from_file(file_path: str):
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as file:
+            blob = file.read()
+        return blob
+    else: 
+        raise ArcanOutputNotFoundException("Arcan Output file not found")
+    
+def create_cross_dag_arguments_file(argument: dict):
+    with open('/opt/airflow/dags/utilities/crossDagArguments.json', 'w') as file:
+        json.dump(argument , file)
+
+def read_cross_dag_arguments_file():
+    try:
+        with open('/opt/airflow/dags/utilities/crossDagArguments.json', 'r') as file:
+            return json.load(file)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return None

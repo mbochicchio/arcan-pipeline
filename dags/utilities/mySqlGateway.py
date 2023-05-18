@@ -30,7 +30,7 @@ class MySqlGateway():
         return project_list
 
     def get_last_version(self, id_project: int):
-        sql = "SELECT * FROM Version WHERE id_project=" + str(id_project) + " ORDER BY id DESC LIMIT 0, 1"
+        sql = f"SELECT * FROM Version WHERE id_project={id_project} ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return model.version(myresult[0][0], myresult[0][1], str(myresult[0][2]), myresult[0][3], None, None)
@@ -60,8 +60,9 @@ class MySqlGateway():
         data = (repository['url_github'], repository['branch'], repository['username'], repository['password'])
         self.__execute_transaction__(sql, data)
 
-    def get_versions_list(self, project: dict, arcan_version:dict):
-        sql = "SELECT DISTINCT V.id, V.id_github, V.date, V.id_project, D.id FROM Version AS V LEFT JOIN DependencyGraph AS D ON D.project_version = V.id WHERE V.id_project =" + str(project['id']) + " AND NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = " + str(arcan_version['id']) + ")"
+    def get_versions_list(self, project: dict, arcan_version_id: str):
+        print("quw", project)
+        sql = f"SELECT DISTINCT V.id, V.id_github, V.date, V.id_project, D.id FROM Version AS V LEFT JOIN DependencyGraph AS D ON D.project_version = V.id WHERE V.id_project ={project['id']} AND NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id})"
         myresult = self.__execute_query__(sql)
         version_list = []
         if len(myresult) > 0:
@@ -80,7 +81,7 @@ class MySqlGateway():
         self.__execute_transaction__(sql, data)
 
     def get_dependency_graph(self, version:dict):
-        sql = "SELECT * FROM DependencyGraph WHERE project_version=" + str(version['id'])
+        sql = f"SELECT * FROM DependencyGraph WHERE project_version={version['id']})"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return model.dependency_graph(myresult[0][0], str(myresult[0][1]), myresult[0][2], myresult[0][3])
