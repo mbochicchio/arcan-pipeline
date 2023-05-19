@@ -2,13 +2,12 @@ import pendulum
 from airflow import DAG
 from airflow.utils.task_group import TaskGroup
 from airflow.decorators import task
-from utilities import tasksFunctions
-from utilities import constants
+from utilities import tasksFunctions, constants
 from airflow.exceptions import AirflowFailException
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from utilities.customException import GitRestApiProjectNotFoundException
 
-@task()
+@task(trigger_rule='all_done')
 def create_cross_dag_arguments(project_list):
     tasksFunctions.create_cross_dag_arguments(project_list)
 

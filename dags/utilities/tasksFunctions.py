@@ -1,9 +1,8 @@
 from utilities.mySqlGateway import MySqlGateway
 from datetime import datetime
-import math
+from math import floor, log10
 from utilities import model, fileManager, dockerRunner, gitHubRepository, constants
-from utilities.customException import ArcanOutputNotFoundException
-import time
+from time import sleep
 
 def get_project_list():
     gw = MySqlGateway()
@@ -27,7 +26,7 @@ def get_new_version_list(project:dict, last_version_analyzed:dict):
         if last_version_analyzed and (last_version_analyzed['id_github'] == version_list[number_of_version-1]['id_github']):
             version_list.pop()
         if (number_of_version != 0):
-            max_number_of_version_to_consider = math.floor(6*math.log10(number_of_version+1))
+            max_number_of_version_to_consider = floor(6*log10(number_of_version+1))
             if max_number_of_version_to_consider < number_of_version:
                 indices = [int(i * (number_of_version-1) / (max_number_of_version_to_consider-1)) for i in range(max_number_of_version_to_consider)]
                 version_list = [version_list[i] for i in indices]
@@ -49,7 +48,7 @@ def create_cross_dag_arguments(project_list: list):
     fileManager.create_cross_dag_arguments_file({constants.ARCAN_VERSION: arcan_version, constants.PROJECT_LIST:project_list_expanded})
 
 def wait():
-    time.sleep(60)
+    sleep(60)
 
 #funzioni per execution
 

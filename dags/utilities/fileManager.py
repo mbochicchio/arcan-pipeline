@@ -10,25 +10,21 @@ def get_output_path(output_type: str, project_id: str):
     return f"/opt/airflow/projects/{output_type}/arcanOutput/{project_id}"
 
 def create_dir(path: str):
-    #try:
+    try:
         if os.path.exists(path):
             delete_dir(path)
         mkdir_cmd = f"mkdir -p {path}"
-        output = subprocess.run(mkdir_cmd, shell=True, capture_output=True)
-        print("ok", output.stdout)
-        print("error", output.stderr)
-    #except subprocess.CalledProcessError as e:
-    #    raise MakeDirException(e)
+        subprocess.run(mkdir_cmd, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        raise MakeDirException(e)
 
 def delete_dir(path: str):
-    #try: 
+    try: 
         if os.path.exists(path):
             rmdir_cmd = f"rm -r {path}"
-            output = subprocess.run(rmdir_cmd, shell=True, capture_output=True)
-            print("ok", output.stdout)
-            print("error", output.stderr)
-    #except subprocess.CalledProcessError as e:
-    #    raise DeleteDirException(e)       
+            subprocess.run(rmdir_cmd, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        raise DeleteDirException(e)       
         
 def get_output_file_path(output_type: str, project_id:dict):
     result_path = get_output_path(output_type=output_type, project_id=project_id)
@@ -40,22 +36,18 @@ def get_output_file_path(output_type: str, project_id:dict):
         raise ArcanOutputNotFoundException(f"{output_type} file not found")
 
 def clone_repository(project_name: str, project_path: str):
-    #try:
+    try:
         cmd_clone = f"git clone https://github.com/{project_name}.git {project_path}"
-        output = subprocess.run(cmd_clone, shell=True, capture_output=True)
-        print("ok", output.stdout)
-        print("error", output.stderr)
-    #except subprocess.CalledProcessError() as e:
-    #    raise CloneRepositoryException(e)
+        subprocess.run(cmd_clone, shell=True, check=True)
+    except subprocess.CalledProcessError() as e:
+        raise CloneRepositoryException(e)
 
 def checkout_repository(version: str, project_dir: str):
-    #try: 
-        cmd_clone = f"git --git-dir={project_dir}/.git checkout --force {version}"
-        output = subprocess.run(cmd_clone, shell=True, capture_output=True)
-        print("ok", output.stdout)
-        print("error", output.stderr)
-    #except subprocess.CalledProcessError as e:
-    #    raise CheckoutRepositoryException(e)  
+    try: 
+        cmd_clone = f"git --git-dir={project_dir}/.git checkout -q {version}"
+        subprocess.run(cmd_clone, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        raise CheckoutRepositoryException(e)  
 
 def get_blob_from_file(file_path: str):
     if os.path.exists(file_path):
