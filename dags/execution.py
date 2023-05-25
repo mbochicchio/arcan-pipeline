@@ -1,93 +1,91 @@
-from airflow import DAG
-from airflow.utils.task_group import TaskGroup
-from airflow.decorators import task, task_group
-from pendulum import datetime, duration
-from typing import List
+from airflow.decorators import task, task_group, dag
+from pendulum import datetime
 from utilities import tasksFunctions, constants
 from utilities.customException import ArcanOutputNotFoundException, CloneRepositoryException, CheckoutRepositoryException, ArcanImageNotFoundException, ArcanExecutionException
 from airflow.exceptions import AirflowFailException
-
-
 import logging
 
+@task
+def get_version_list(version_range: int, arcan_version: dict):
+    return tasksFunctions.get_version_list(version_range=version_range, arcan_version=arcan_version)
+
+@task
+def get_arcan_version():
+    return tasksFunctions.get_arcan_version()
+
+@task
+def get_version_range():
+    return tasksFunctions.get_version_range()
+
 @task(retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
-def create_project_directory(project:dict):
+def create_version_directory(version:dict):
     try:
-        tasksFunctions.create_project_directory(project)
-    except CloneRepositoryException as e:
+        tasksFunctions.create_version_directory(version)
+    except (CloneRepositoryException, CheckoutRepositoryException) as e:
         raise AirflowFailException()
 
 @task(trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
-def delete_project_directory(project:dict):
-    return tasksFunctions.delete_project_directory(project)
+def delete_version_directory(version:dict):
+    return tasksFunctions.delete_version_directory(version)
 
 @task(trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
-def clean_output_directory(project: dict):
-    return tasksFunctions.delete_output_directory(project['id'])
+def clean_output_directory(version: dict):
+    return tasksFunctions.delete_output_directory(version['id'])
 
 @task()
 def skip():
     logging.info("Dependency Graph already created")
 
-@task.branch()
-def check(version: dict):
-    id_project = version['project']['id']
-    if version['dependency_graph'] is None:
-        return f'{id_project}.{id_project}_{version["id"]}.parsing_version.create_dependency_graph'
-    return f'{id_project}.{id_project}_{version["id"]}.skip'
-
 @task_group()
-def parsing_version(version: dict):
+def execute(version: dict, arcan_version: dict):
+
+    @task.branch()
+    def check(version: dict):
+        if version['dependency_graph'] is None:
+            return 'execute.create_dependency_graph'
+        return 'execute.skip' 
 
     @task(retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
     def create_dependency_graph(version: dict):
-        try:
-            return tasksFunctions.create_dependency_graph(version)
-        except (CheckoutRepositoryException, ArcanImageNotFoundException, ArcanExecutionException) as e:
-            raise AirflowFailException(e)
+            try:
+                return tasksFunctions.create_dependency_graph(version)
+            except (ArcanImageNotFoundException, ArcanExecutionException) as e:
+                raise AirflowFailException(e)
 
     @task(retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
     def save_dependency_graph(dependency_graph: dict):
-        try:
-            return tasksFunctions.save_dependency_graph(dependency_graph=dependency_graph)
-        except ArcanOutputNotFoundException as e:
-            raise AirflowFailException(e)
-        
-    save_dependency_graph(dependency_graph=create_dependency_graph(version=version)) 
-
-@task_group()
-def analyze_version(version:dict, arcan_version: dict):
+            try:
+                return tasksFunctions.save_dependency_graph(dependency_graph=dependency_graph)
+            except ArcanOutputNotFoundException as e:
+                raise AirflowFailException(e)
+            
     @task(trigger_rule='none_failed_min_one_success', retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
     def create_analysis(version:dict, arcan_version:dict):  
-        try:  
-            return tasksFunctions.create_analysis(version, arcan_version)
-        except (CheckoutRepositoryException, ArcanImageNotFoundException, ArcanExecutionException) as e:
-            raise AirflowFailException(e)
+            try:  
+                return tasksFunctions.create_analysis(version, arcan_version)
+            except (ArcanImageNotFoundException, ArcanExecutionException) as e:
+                raise AirflowFailException(e)
 
     @task(retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
     def save_analysis(analysis:dict):
-        try:
-            tasksFunctions.save_analysis(analysis=analysis)
-        except ArcanOutputNotFoundException as e:
-            raise AirflowFailException(e)
+            try:
+                tasksFunctions.save_analysis(analysis=analysis)
+            except ArcanOutputNotFoundException as e:
+                raise AirflowFailException(e)
 
-    save_analysis(analysis=create_analysis(version=version, arcan_version=arcan_version))    
+    check = check(version=version)
+    parsing =  create_dependency_graph(version=version)
+    save_parsing_task = save_dependency_graph(dependency_graph=parsing)
+    analysis = create_analysis(version=version, arcan_version=arcan_version)
+    save_analysis_task = save_analysis(analysis = analysis)
+    clean_output_directory_task = clean_output_directory(version=version)
+    delete_version_directory_task = delete_version_directory(version)
+    skip_task = skip()
+    create_version_directory(version) >> check
+    check >> parsing >> save_parsing_task >> analysis >> save_analysis_task >> clean_output_directory_task >> delete_version_directory_task
+    check >> skip_task >> analysis >> save_analysis_task >> clean_output_directory_task >> delete_version_directory_task
 
-def make_taskgroup(dag: DAG, version_list: List[dict], project: dict, arcan_version: dict, priority_weight: int) -> TaskGroup:
-    group_id=str(project['id'])
-    with TaskGroup(group_id=group_id, dag=dag, default_args={'priority_weight': priority_weight}) as paths:
-        previous = None
-        for version in version_list:
-            version_id = version['id']
-            with TaskGroup(group_id=f'{group_id}_{version_id}') as path:
-                check(version=version) >> [parsing_version(version=version), skip()] >> analyze_version(version=version, arcan_version=arcan_version) >> clean_output_directory(project=version['project']) 
-            if previous:
-                previous >> path
-            previous = path
-    return paths
-
-with DAG(
-    dag_id = constants.EXECUTION_DAG_ID, 
+@dag(
     schedule=None,
     start_date=datetime(2021, 1, 1, tz="UTC"),
     catchup=False,
@@ -99,17 +97,11 @@ with DAG(
         "retry_exponential_backoff": constants.DEFAULT_RETRY_EXPONENTIAL_BACKOFF,
         "max_retry_delay": constants.DEFAULT_MAX_RETRY_DELAY,
     },
-) as execution:
-    arguments = tasksFunctions.get_cross_dag_arguments()
-    if arguments:
-        arcan_version = arguments[constants.ARCAN_VERSION]
-        project_list = arguments[constants.PROJECT_LIST]
-        for index in range(len(project_list)):
-            project = project_list[index][constants.PROJECT]
-            version_list = project_list[index][constants.VERSION_LIST]
-            if version_list:
-                task_group = make_taskgroup(dag=execution, version_list=version_list, project=project, arcan_version=arcan_version, priority_weight=index)
-                create_project_directory(project) >> task_group >> delete_project_directory(project)
+) 
+def execution():
+    version_range = get_version_range()
+    arcan_version = get_arcan_version()
+    version_list = get_version_list(version_range, arcan_version= arcan_version)
+    execute.partial(arcan_version=arcan_version).expand(version=version_list)
 
-
-
+execution()

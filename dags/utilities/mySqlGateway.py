@@ -20,14 +20,43 @@ class MySqlGateway():
             conn.commit()
             return True
 
-    def get_projects_list(self):
-        sql = "SELECT P.id, P.language, P.name, R.id, R.project_repository, R.branch, R.username, R.password FROM Project AS P JOIN Repository AS R ON P.id_repository = R.id"
+    def get_project_by_id(self, project_id: int):
+        sql = f"SELECT P.id, P.language, P.name, R.id, R.project_repository, R.branch, R.username, R.password FROM Project AS P JOIN Repository AS R ON P.id_repository = R.id WHERE P.id ={project_id}"
+        myresult = self.__execute_query__(sql)
+        if len(myresult) > 0:
+            for item in myresult:
+                return model.project(item[0], model.repository(item[3], item[4], item[5], item[6], item[7]), item[1], item[2])
+        return None
+
+    def get_projects_list(self, first_index, range):
+        sql = f"SELECT P.id, P.language, P.name, R.id, R.project_repository, R.branch, R.username, R.password FROM Project AS P JOIN Repository AS R ON P.id_repository = R.id WHERE P.id >= {first_index} ORDER BY P.id ASC LIMIT {range}"
         myresult = self.__execute_query__(sql)
         project_list = []
         if len(myresult) > 0:
             for item in myresult:
                 project_list.append(model.project(item[0], model.repository(item[3], item[4], item[5], item[6], item[7]), item[1], item[2]))
         return project_list
+
+    def get_project_range(self):
+        sql = f"SELECT first_index, window_size FROM Settings ORDER BY id DESC LIMIT 0, 1"
+        myresult = self.__execute_query__(sql)
+        if len(myresult) > 0:
+            return model.settings(myresult[0][0], myresult[0][1])
+        else:
+            return None
+    
+    def get_version_range(self):
+        sql = f"SELECT window_size FROM Settings ORDER BY id DESC LIMIT 0, 1"
+        myresult = self.__execute_query__(sql)
+        if len(myresult) > 0:
+            return myresult[0][0]
+        else:
+            return 0
+        
+    def update_project_range(self, project_range: dict):
+        sql = "UPDATE Settings SET first_index=%s, window_size=%s"
+        data = (project_range['first_index'], project_range['range'])
+        self.__execute_transaction__(sql, data)
 
     def get_last_version(self, id_project: int):
         sql = f"SELECT * FROM Version WHERE id_project={id_project} ORDER BY id DESC LIMIT 0, 1"
@@ -60,14 +89,13 @@ class MySqlGateway():
         data = (repository['url_github'], repository['branch'], repository['username'], repository['password'])
         self.__execute_transaction__(sql, data)
 
-    def get_versions_list(self, project: dict, arcan_version_id: str):
-        print("quw", project)
-        sql = f"SELECT DISTINCT V.id, V.id_github, V.date, V.id_project, D.id FROM Version AS V LEFT JOIN DependencyGraph AS D ON D.project_version = V.id WHERE V.id_project ={project['id']} AND NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id})"
+    def get_versions_list(self, arcan_version_id: str, limit: int):
+        sql = f"SELECT T.id, T.id_github, T.date, T.id_project, D.id FROM (SELECT DISTINCT * FROM Version AS V WHERE NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id}) LIMIT {limit}) AS T LEFT JOIN DependencyGraph AS D ON D.project_version = T.id"
         myresult = self.__execute_query__(sql)
         version_list = []
         if len(myresult) > 0:
             for item in myresult:
-                version_list.append(model.version(item[0], item[1], str(item[2]), project, None, item[4]))
+                version_list.append(model.version(item[0], item[1], str(item[2]), item[3], None, item[4]))
         return version_list
 
     def add_dependency_graph(self, dependency_graph: dict):

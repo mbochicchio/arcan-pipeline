@@ -1,13 +1,5 @@
 from pendulum import datetime, duration
 
-EXECUTION_DAG_ID = "execution"
-
-#CROSS DAG ARGUMENT
-ARCAN_VERSION = 'arcan_version'
-PROJECT_LIST = 'project_list'
-PROJECT = 'project'
-VERSION_LIST = 'version_list'
-
 #DEFAULT ARGUMENTS
 DEFAULT_OWNER = "Airflow"
 DEFAULT_RETRIES = 5

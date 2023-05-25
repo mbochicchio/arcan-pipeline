@@ -2,12 +2,12 @@ import docker
 import os
 from utilities.customException import DockerApiException, ArcanImageNotFoundException, ArcanExecutionException, DockerException
 
-def execute_analysis(project: dict):
-    cmd = f'analyse -i /projects/{project["id"]} -o /projects/analysis -l {project["language"]} --vcs NO_VCS --all output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
+def execute_analysis(version_id: int, project_language:str):
+    cmd = f'analyse -i /projects/{version_id} -o /projects/analysis -l {project_language} --vcs NO_VCS --all output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
     execute_container(cmd)
 
-def execute_parsing(project: dict):
-    cmd = f'analyse -i /projects/{project["id"]} -o /projects/dependency-graph -l {project["language"]} --vcs NO_VCS output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
+def execute_parsing(version_id: int, project_language:str):
+    cmd = f'analyse -i /projects/{version_id} -o /projects/dependency-graph -l {project_language} --vcs NO_VCS output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
     execute_container(cmd)
 
 def execute_container(cmd: str):

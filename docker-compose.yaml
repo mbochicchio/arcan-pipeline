@@ -78,7 +78,6 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - shared-volume:/opt/airflow/projects:rw
-  #user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -115,6 +114,7 @@ services:
 
   postgres:
     image: postgres:13
+    command: postgres -c 'max_stack_depth'=7680
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow

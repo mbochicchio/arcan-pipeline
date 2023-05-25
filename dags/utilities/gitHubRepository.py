@@ -3,10 +3,11 @@ import json
 from utilities import model
 from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiException
 import time
-
+from airflow.models import Variable
 
 ENDPOINT = "https://api.github.com"
 PER_PAGE = 100
+auth = ( Variable.get('git_username'),  Variable.get('git_token'))
 
 def get_version_list(project: dict, last_version_analyzed: dict):
     complete = False
@@ -14,7 +15,9 @@ def get_version_list(project: dict, last_version_analyzed: dict):
     version_list = []
     while (not complete):
         url = f"{ENDPOINT}/repos/{project['name']}/releases?page={page_number}&per_page={PER_PAGE}"
-        response = requests.get(url)
+        print(auth)
+        response = requests.get(url, auth=auth)
+        print(response.headers['x-ratelimit-remaining'])
         if response.status_code == 200:
             response_release_list = json.loads(response.content)
             for item in response_release_list:
@@ -39,7 +42,7 @@ def get_last_commit(project: dict):
     url = f"{ENDPOINT}/repos/{project['name']}/commits/{project['repository']['branch']}"
     complete = False
     while (not complete):
-        response = requests.get(url)
+        response = requests.get(url, auth=auth)
         if response.status_code == 200:
             commit = json.loads(response.content)
             commit_parsed = model.version(None, commit['sha'], commit['commit']['committer']['date'], project['id'], None, None)
@@ -49,7 +52,7 @@ def get_last_commit(project: dict):
         elif response.status_code == 404:
             raise GitRestApiProjectNotFoundException("The GitHub repository doesn't exist")
         else:
-            raise GitRestApiException(f'API response: {response.status_code} with reason: {response.reason}')
+            raise GitRestApiException(f'API response: {response.status_code} with reason: {response.text}')
     return commit_parsed
 
 def wait_reset_time(reset_time: float):

@@ -5,6 +5,13 @@ CREATE TABLE IF NOT EXISTS ArcanVersion (
     PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS Settings (
+    id int NOT NULL AUTO_INCREMENT,
+    first_index int,
+    window_size int,
+    PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS Repository (
     id int NOT NULL AUTO_INCREMENT,
     project_repository varchar(255),

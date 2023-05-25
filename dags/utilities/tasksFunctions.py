@@ -1,15 +1,36 @@
 from utilities.mySqlGateway import MySqlGateway
 from datetime import datetime
 from math import floor, log10
-from utilities import model, fileManager, dockerRunner, gitHubRepository, constants
-from time import sleep
-
-def get_project_list():
-    gw = MySqlGateway()
-    project_list = gw.get_projects_list()
-    return project_list
+from utilities import model, fileManager, dockerRunner, gitHubRepository
 
 #funzioni per inception
+
+def get_project_list(project_range: dict):
+    gw = MySqlGateway()
+    project_list = gw.get_projects_list(first_index = project_range['first_index'], range = project_range['range'])
+    return project_list
+
+def get_arcan_version():
+    gw = MySqlGateway()
+    return gw.get_arcan_version()
+
+def get_project_range():
+    gw = MySqlGateway()
+    settings = gw.get_project_range()
+    return settings
+
+def update_project_range(project_range:dict, number_of_projects_considered: int):
+    gw = MySqlGateway()
+    if number_of_projects_considered < project_range['range']:
+        new_index = 1
+    else:
+        new_index = project_range['first_index'] + project_range['range'] + 1
+    new_project_range = model.settings(first_index=new_index, range=project_range['range'])
+    gw.update_project_range(new_project_range)
+
+def get_version_range():
+    gw = MySqlGateway() 
+    return gw.get_version_range()
 
 def get_last_version(project: dict):
     gw = MySqlGateway()
@@ -38,42 +59,35 @@ def save_new_project_versions(version_list: list):
         for version in reversed(version_list):
             gw.add_version(version)
 
-def create_cross_dag_arguments(project_list: list):
-    gw = MySqlGateway()
-    arcan_version = gw.get_arcan_version()
-    project_list_expanded=[]
-    for project in project_list:
-        version_list_for_project = gw.get_versions_list(project=project, arcan_version_id=arcan_version['id']) 
-        project_list_expanded.append({constants.PROJECT: project, constants.VERSION_LIST: version_list_for_project})
-    fileManager.create_cross_dag_arguments_file({constants.ARCAN_VERSION: arcan_version, constants.PROJECT_LIST:project_list_expanded})
-
-def wait():
-    sleep(60)
 
 #funzioni per execution
+def get_version_list(version_range: int, arcan_version:dict):
+    gw = MySqlGateway()
+    return gw.get_versions_list(limit=version_range, arcan_version_id=arcan_version['id'])
+    
 
-def get_cross_dag_arguments():
-    return fileManager.read_cross_dag_arguments_file()
-
-def create_project_directory(project: dict):
-    project_path = fileManager.get_project_path(project['id'])
+def create_version_directory(version: dict):
+    gw = MySqlGateway()
+    project = gw.get_project_by_id(version['project'])
+    project_path = fileManager.get_version_path(version['id'])
     fileManager.create_dir(project_path)
     fileManager.clone_repository(project['name'], project_path)
+    fileManager.checkout_repository(version=version['id_github'], project_dir=project_path)
 
 def create_dependency_graph(version:dict):
-    project_path = fileManager.get_project_path(version['project']['id'])
-    fileManager.checkout_repository(version=version['id_github'], project_dir=project_path)
-    dockerRunner.execute_parsing(project=version['project'])
-    output_path = fileManager.get_output_file_path(output_type="dependency-graph", project_id=version['project']['id'])
+    gw = MySqlGateway()
+    project = gw.get_project_by_id(version['project'])
+    dockerRunner.execute_parsing(version_id=version['id'], project_language=project['language'])
+    output_path = fileManager.get_output_file_path(output_type="dependency-graph", version_id=version['id'])
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     dependency_graph = model.dependency_graph(None, now, output_path, version['id'])
     return dependency_graph
 
 def create_analysis(version:dict, arcan_version:dict):
-    project_path = fileManager.get_project_path(version['project']['id'])
-    fileManager.checkout_repository(version=version['id_github'], project_dir=project_path)
-    dockerRunner.execute_analysis(project=version['project'])
-    output_file_path = fileManager.get_output_file_path(output_type="analysis", project_id=version['project']['id'])
+    gw = MySqlGateway()
+    project = gw.get_project_by_id(version['project'])
+    dockerRunner.execute_analysis(version_id=version['id'], project_language=project['language'])
+    output_file_path = fileManager.get_output_file_path(output_type="analysis", version_id=version['id'])
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     analysis = model.analysis(None, now, output_file_path, version['id'], arcan_version['id'])
     return analysis
@@ -90,12 +104,12 @@ def save_analysis(analysis:dict):
     gw = MySqlGateway()
     gw.add_analysis(analysis)
 
-def delete_output_directory(project_id: str):
-    output_parsing_path = fileManager.get_output_path(output_type="dependency-graph", project_id=project_id)
-    output_analysis_path = fileManager.get_output_path(output_type="analysis", project_id=project_id)
+def delete_output_directory(version_id: str):
+    output_parsing_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version_id)
+    output_analysis_path = fileManager.get_output_path(output_type="analysis", version_id=version_id)
     fileManager.delete_dir(path=output_parsing_path)
     fileManager.delete_dir(path=output_analysis_path)    
  
-def delete_project_directory(project: dict):
-    project_path = fileManager.get_project_path(project['id'])
-    fileManager.delete_dir(path=project_path)
+def delete_version_directory(version: dict):
+    version_path = fileManager.get_version_path(version['id'])
+    fileManager.delete_dir(path=version_path)
