@@ -22,6 +22,9 @@ class CheckoutRepositoryException(Exception):
 class GitRestApiProjectNotFoundException(GitRestApiException):
     pass
 
+class GitRestApiValidationFailedException(GitRestApiException):
+    pass
+
 class DockerApiException(Exception):
     pass
 

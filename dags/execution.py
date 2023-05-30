@@ -43,12 +43,12 @@ def execute(version: dict, arcan_version: dict):
     def check(version: dict):
         if version['dependency_graph'] is None:
             return 'execute.create_dependency_graph'
-        return 'execute.skip' 
+        return 'execute.skip'
 
     @task(retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
-    def create_dependency_graph(version: dict):
+    def create_dependency_graph(version: dict, arcan_version: dict):
             try:
-                return tasksFunctions.create_dependency_graph(version)
+                return tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
             except (ArcanImageNotFoundException, ArcanExecutionException) as e:
                 raise AirflowFailException(e)
 
@@ -74,7 +74,7 @@ def execute(version: dict, arcan_version: dict):
                 raise AirflowFailException(e)
 
     check = check(version=version)
-    parsing =  create_dependency_graph(version=version)
+    parsing =  create_dependency_graph(version=version, arcan_version=arcan_version)
     save_parsing_task = save_dependency_graph(dependency_graph=parsing)
     analysis = create_analysis(version=version, arcan_version=arcan_version)
     save_analysis_task = save_analysis(analysis = analysis)

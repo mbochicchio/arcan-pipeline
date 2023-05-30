@@ -1,7 +1,7 @@
 import requests
 import json
 from utilities import model
-from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiException
+from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiException, GitRestApiValidationFailedException
 import time
 from airflow.models import Variable
 
@@ -51,6 +51,8 @@ def get_last_commit(project: dict):
             wait_reset_time(float(response.headers['x-ratelimit-reset']))
         elif response.status_code == 404:
             raise GitRestApiProjectNotFoundException("The GitHub repository doesn't exist")
+        elif response.status_code == 422:
+            raise GitRestApiValidationFailedException("Validation failed, or the endpoint has been spammed")
         else:
             raise GitRestApiException(f'API response: {response.status_code} with reason: {response.text}')
     return commit_parsed

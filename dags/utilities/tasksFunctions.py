@@ -74,10 +74,10 @@ def create_version_directory(version: dict):
     fileManager.clone_repository(project['name'], project_path)
     fileManager.checkout_repository(version=version['id_github'], project_dir=project_path)
 
-def create_dependency_graph(version:dict):
+def create_dependency_graph(version:dict, arcan_version:dict):
     gw = MySqlGateway()
     project = gw.get_project_by_id(version['project'])
-    dockerRunner.execute_parsing(version_id=version['id'], project_language=project['language'])
+    dockerRunner.execute_parsing(version_id=version['id'], project_language=project['language'], arcan_image=arcan_version['version'])
     output_path = fileManager.get_output_file_path(output_type="dependency-graph", version_id=version['id'])
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     dependency_graph = model.dependency_graph(None, now, output_path, version['id'])
@@ -86,7 +86,7 @@ def create_dependency_graph(version:dict):
 def create_analysis(version:dict, arcan_version:dict):
     gw = MySqlGateway()
     project = gw.get_project_by_id(version['project'])
-    dockerRunner.execute_analysis(version_id=version['id'], project_language=project['language'])
+    dockerRunner.execute_analysis(version_id=version['id'], project_language=project['language'], arcan_image=arcan_version['version'])
     output_file_path = fileManager.get_output_file_path(output_type="analysis", version_id=version['id'])
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     analysis = model.analysis(None, now, output_file_path, version['id'], arcan_version['id'])
