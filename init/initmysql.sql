@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS ArcanVersion (
 );
 
 CREATE TABLE IF NOT EXISTS Settings (
-    name varchar(255) AUTO_INCREMENT,
-    value int,
+    name varchar(255),
+    value int NOT NULL,
     PRIMARY KEY (name)
 );
 

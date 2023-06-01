@@ -25,8 +25,7 @@ def create_version_directory(version:dict):
 
 @task(priority_weight=3, trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
 def delete_version_directory(version:dict):
-    tasksFunctions.delete_output_directory(version['id'])
-    tasksFunctions.delete_version_directory(version)
+    tasksFunctions.delete_version_directory(version['id'])
 
 @task_group()
 def execute(version: dict, arcan_version: dict):

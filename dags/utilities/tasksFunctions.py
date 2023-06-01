@@ -105,12 +105,10 @@ def save_analysis(analysis:dict):
     gw = MySqlGateway()
     gw.add_analysis(analysis)
 
-def delete_output_directory(version_id: str):
+def delete_version_directory(version_id: dict):
+    version_path = fileManager.get_version_path(version_id)
     output_parsing_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version_id)
     output_analysis_path = fileManager.get_output_path(output_type="analysis", version_id=version_id)
-    fileManager.delete_dir(path=output_parsing_path)
-    fileManager.delete_dir(path=output_analysis_path)    
- 
-def delete_version_directory(version: dict):
-    version_path = fileManager.get_version_path(version['id'])
     fileManager.delete_dir(path=version_path)
+    fileManager.delete_dir(path=output_parsing_path)
+    fileManager.delete_dir(path=output_analysis_path)  
