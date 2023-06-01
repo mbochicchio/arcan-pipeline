@@ -38,7 +38,7 @@ class MySqlGateway():
         return project_list
 
     def get_setting_by_name(self, name: str):
-        sql = f"SELECT value FROM Settings WHERE name={name} ORDER BY id DESC LIMIT 0, 1"
+        sql = f"SELECT S.value FROM Settings AS S WHERE S.name={name}"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return myresult[0][0]
