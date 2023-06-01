@@ -59,10 +59,10 @@ class MySqlGateway():
             return None
     
     def get_arcan_version(self):
-        sql = "SELECT * FROM ArcanVersion ORDER BY id DESC LIMIT 0, 1"
+        sql = "SELECT id, date_of_release, version FROM ArcanVersion ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
-            return model.arcan_version(myresult[0][0], str(myresult[0][1]), myresult[0][2])
+            return model.arcan_version(myresult[0][0], myresult[0][2], str(myresult[0][1]))
         else:
             return None
 

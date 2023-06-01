@@ -13,8 +13,9 @@ def execute_parsing(version_id: int, project_language:str, arcan_image: str):
 def execute_container(cmd: str, arcan_image: str):
     os.environ['DOCKER_HOST'] = 'tcp://host.docker.internal:2375'
     client = docker.from_env()
+    print(arcan_image)
     try:
-        client.containers.run(arcan_image, command=cmd, user=50000, remove=True, volumes={'arcan-pipeline_shared-volume': {'bind': '/projects', 'mode': 'rw'}})
+        client.containers.run(image=arcan_image, command=cmd, user=50000, remove=True, volumes={'arcan-pipeline_shared-volume': {'bind': '/projects', 'mode': 'rw'}})
     except docker.errors.APIError as e:
         raise DockerApiException("Docker API Exception:", e)
     except docker.errors.ContainerError as e:
