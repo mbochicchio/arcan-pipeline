@@ -18,23 +18,18 @@ def update_project_range(project_range:dict, number_of_projects_considered: int)
         new_index = 1
     else:
         new_index = project_range['first_index'] + project_range['range'] + 1
-    new_project_range = model.settings(first_index=new_index, range=project_range['range'])
-    gw.update_setting_by_name('first_index_inception',str(new_project_range))
+    gw.update_setting_by_name('first_index_inception',str(new_index))
 
 def get_project_range():
     gw = MySqlGateway()
-    range = gw.get_setting_by_name('inception_range')
-    first_index = gw.get_setting_by_name('first_index_range')
+    range = int(gw.get_setting_by_name('inception_range'))
+    first_index = int(gw.get_setting_by_name('first_index_inception'))
     settings = {'range': range, 'first_index': first_index}
     return settings
 
 def get_version_range():
     gw = MySqlGateway()
-    return gw.get_setting_by_name('execution_range')
-
-def get_first_version_index():
-    gw = MySqlGateway()
-    return gw.get_setting_by_name('first_index')
+    return int(gw.get_setting_by_name('execution_range'))
 
 def get_last_version(project: dict):
     gw = MySqlGateway()
