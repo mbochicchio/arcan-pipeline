@@ -37,25 +37,17 @@ class MySqlGateway():
                 project_list.append(model.project(item[0], model.repository(item[3], item[4], item[5], item[6], item[7]), item[1], item[2]))
         return project_list
 
-    def get_project_range(self):
-        sql = f"SELECT first_index, window_size FROM Settings ORDER BY id DESC LIMIT 0, 1"
-        myresult = self.__execute_query__(sql)
-        if len(myresult) > 0:
-            return model.settings(myresult[0][0], myresult[0][1])
-        else:
-            return None
-    
-    def get_version_range(self):
-        sql = f"SELECT window_size FROM Settings ORDER BY id DESC LIMIT 0, 1"
+    def get_setting_by_name(self, name: str):
+        sql = f"SELECT value FROM Settings WHERE name={name} ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return myresult[0][0]
         else:
-            return 0
+            return None
         
-    def update_project_range(self, project_range: dict):
-        sql = "UPDATE Settings SET first_index=%s, window_size=%s"
-        data = (project_range['first_index'], project_range['range'])
+    def update_setting_by_name(self, name: str, value: str):
+        sql = "UPDATE Settings SET value=%s WHERE name=%s"
+        data = (value, name)
         self.__execute_transaction__(sql, data)
 
     def get_last_version(self, id_project: int):

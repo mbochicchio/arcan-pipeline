@@ -6,10 +6,9 @@ CREATE TABLE IF NOT EXISTS ArcanVersion (
 );
 
 CREATE TABLE IF NOT EXISTS Settings (
-    id int NOT NULL AUTO_INCREMENT,
-    first_index int,
-    window_size int,
-    PRIMARY KEY (id)
+    name varchar(255) AUTO_INCREMENT,
+    value int,
+    PRIMARY KEY (name)
 );
 
 CREATE TABLE IF NOT EXISTS Repository (

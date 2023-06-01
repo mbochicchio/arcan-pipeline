@@ -32,10 +32,6 @@ def delete_version_directory(version:dict):
 def clean_output_directory(version: dict):
     return tasksFunctions.delete_output_directory(version['id'])
 
-@task()
-def skip():
-    logging.info("Dependency Graph already created")
-
 @task_group()
 def execute(version: dict, arcan_version: dict):
 
@@ -43,7 +39,7 @@ def execute(version: dict, arcan_version: dict):
     def check(version: dict):
         if version['dependency_graph'] is None:
             return 'execute.create_dependency_graph'
-        return 'execute.skip'
+        return 'execute.create_analysis'
 
     @task(retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
     def create_dependency_graph(version: dict, arcan_version: dict):
@@ -83,7 +79,7 @@ def execute(version: dict, arcan_version: dict):
     skip_task = skip()
     create_version_directory(version) >> check
     check >> parsing >> save_parsing_task >> analysis >> save_analysis_task >> clean_output_directory_task >> delete_version_directory_task
-    check >> skip_task >> analysis >> save_analysis_task >> clean_output_directory_task >> delete_version_directory_task
+    check >> analysis >> save_analysis_task >> clean_output_directory_task >> delete_version_directory_task
 
 @dag(
     schedule=None,

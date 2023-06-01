@@ -8,12 +8,6 @@ def version(id, id_github, date, project, last_analysis, dependency_graph):
       'dependency_graph': dependency_graph
     }
 
-def settings(first_index, range):
-    return {
-      'first_index': first_index,
-      'range': range
-    } 
-
 def project(id, repository, language, name):
     return {
       'id': id,

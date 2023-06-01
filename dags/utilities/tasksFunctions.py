@@ -3,8 +3,6 @@ from datetime import datetime
 from math import floor, log10
 from utilities import model, fileManager, dockerRunner, gitHubRepository
 
-#funzioni per inception
-
 def get_project_list(project_range: dict):
     gw = MySqlGateway()
     project_list = gw.get_projects_list(first_index = project_range['first_index'], range = project_range['range'])
@@ -14,11 +12,6 @@ def get_arcan_version():
     gw = MySqlGateway()
     return gw.get_arcan_version()
 
-def get_project_range():
-    gw = MySqlGateway()
-    settings = gw.get_project_range()
-    return settings
-
 def update_project_range(project_range:dict, number_of_projects_considered: int):
     gw = MySqlGateway()
     if number_of_projects_considered < project_range['range']:
@@ -26,11 +19,22 @@ def update_project_range(project_range:dict, number_of_projects_considered: int)
     else:
         new_index = project_range['first_index'] + project_range['range'] + 1
     new_project_range = model.settings(first_index=new_index, range=project_range['range'])
-    gw.update_project_range(new_project_range)
+    gw.update_setting_by_name('first_index_inception',str(new_project_range))
+
+def get_project_range():
+    gw = MySqlGateway()
+    range = gw.get_setting_by_name('inception_range')
+    first_index = gw.get_setting_by_name('first_index_range')
+    settings = {'range': range, 'first_index': first_index}
+    return settings
 
 def get_version_range():
-    gw = MySqlGateway() 
-    return gw.get_version_range()
+    gw = MySqlGateway()
+    return gw.get_setting_by_name('execution_range')
+
+def get_first_version_index():
+    gw = MySqlGateway()
+    return gw.get_setting_by_name('first_index')
 
 def get_last_version(project: dict):
     gw = MySqlGateway()
@@ -59,13 +63,10 @@ def save_new_project_versions(version_list: list):
         for version in reversed(version_list):
             gw.add_version(version)
 
-
-#funzioni per execution
 def get_version_list(version_range: int, arcan_version:dict):
     gw = MySqlGateway()
     return gw.get_versions_list(limit=version_range, arcan_version_id=arcan_version['id'])
     
-
 def create_version_directory(version: dict):
     gw = MySqlGateway()
     project = gw.get_project_by_id(version['project'])
