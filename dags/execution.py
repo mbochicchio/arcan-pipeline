@@ -3,7 +3,6 @@ from pendulum import datetime
 from utilities import tasksFunctions, constants
 from utilities.customException import ArcanOutputNotFoundException, CloneRepositoryException, CheckoutRepositoryException, ArcanImageNotFoundException, ArcanExecutionException
 from airflow.exceptions import AirflowFailException
-import logging
 
 @task
 def get_version_list(version_range: int, arcan_version: dict):
@@ -17,20 +16,17 @@ def get_arcan_version():
 def get_version_range():
     return tasksFunctions.get_version_range()
 
-@task(retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
+@task(priority_weight=1, retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
 def create_version_directory(version:dict):
     try:
         tasksFunctions.create_version_directory(version)
     except (CloneRepositoryException, CheckoutRepositoryException) as e:
         raise AirflowFailException()
 
-@task(trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
+@task(priority_weight=3, trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
 def delete_version_directory(version:dict):
-    return tasksFunctions.delete_version_directory(version)
-
-@task(trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
-def clean_output_directory(version: dict):
-    return tasksFunctions.delete_output_directory(version['id'])
+    tasksFunctions.delete_output_directory(version['id'])
+    tasksFunctions.delete_version_directory(version)
 
 @task_group()
 def execute(version: dict, arcan_version: dict):
@@ -41,28 +37,28 @@ def execute(version: dict, arcan_version: dict):
             return 'execute.create_dependency_graph'
         return 'execute.create_analysis'
 
-    @task(retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
+    @task(priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
     def create_dependency_graph(version: dict, arcan_version: dict):
             try:
                 return tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
             except (ArcanImageNotFoundException, ArcanExecutionException) as e:
                 raise AirflowFailException(e)
 
-    @task(retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
+    @task(priority_weight=2, retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
     def save_dependency_graph(dependency_graph: dict):
             try:
                 return tasksFunctions.save_dependency_graph(dependency_graph=dependency_graph)
             except ArcanOutputNotFoundException as e:
                 raise AirflowFailException(e)
             
-    @task(trigger_rule='none_failed_min_one_success', retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
+    @task(priority_weight=2, trigger_rule='none_failed_min_one_success', retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
     def create_analysis(version:dict, arcan_version:dict):  
             try:  
                 return tasksFunctions.create_analysis(version, arcan_version)
             except (ArcanImageNotFoundException, ArcanExecutionException) as e:
                 raise AirflowFailException(e)
 
-    @task(retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
+    @task(priority_weight=2, retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
     def save_analysis(analysis:dict):
             try:
                 tasksFunctions.save_analysis(analysis=analysis)
@@ -74,12 +70,10 @@ def execute(version: dict, arcan_version: dict):
     save_parsing_task = save_dependency_graph(dependency_graph=parsing)
     analysis = create_analysis(version=version, arcan_version=arcan_version)
     save_analysis_task = save_analysis(analysis = analysis)
-    clean_output_directory_task = clean_output_directory(version=version)
     delete_version_directory_task = delete_version_directory(version)
-    skip_task = skip()
     create_version_directory(version) >> check
-    check >> parsing >> save_parsing_task >> analysis >> save_analysis_task >> clean_output_directory_task >> delete_version_directory_task
-    check >> analysis >> save_analysis_task >> clean_output_directory_task >> delete_version_directory_task
+    check >> parsing >> save_parsing_task >> analysis >> save_analysis_task >> delete_version_directory_task
+    check >> analysis >> save_analysis_task >> delete_version_directory_task
 
 @dag(
     schedule=None,
