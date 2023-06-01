@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS ArcanVersion (
 
 CREATE TABLE IF NOT EXISTS Settings (
     name varchar(255),
-    value int NOT NULL,
+    value varchar(255) NOT NULL,
     PRIMARY KEY (name)
 );
 

@@ -17,7 +17,7 @@ def update_project_range(project_range:dict, number_of_projects_considered: int)
     if number_of_projects_considered < project_range['range']:
         new_index = 1
     else:
-        new_index = project_range['first_index'] + project_range['range'] + 1
+        new_index = project_range['first_index'] + project_range['range']
     gw.update_setting_by_name('first_index_inception',str(new_index))
 
 def get_project_range():

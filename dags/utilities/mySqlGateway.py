@@ -38,7 +38,7 @@ class MySqlGateway():
         return project_list
 
     def get_setting_by_name(self, name: str):
-        sql = f"SELECT S.value FROM Settings AS S WHERE S.name={name}"
+        sql = f"SELECT value FROM Settings WHERE name='{name}'"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return myresult[0][0]
@@ -62,7 +62,7 @@ class MySqlGateway():
         sql = "SELECT * FROM ArcanVersion ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
-            return model.arcan_version(myresult[0][0], myresult[0][1], myresult[0][2])
+            return model.arcan_version(myresult[0][0], str(myresult[0][1]), myresult[0][2])
         else:
             return None
 
