@@ -75,8 +75,9 @@ def execute(version: dict, arcan_version: dict):
     check >> analysis >> save_analysis_task >> delete_version_directory_task
 
 @dag(
-    schedule=None,
-    start_date=datetime(2021, 1, 1, tz="UTC"),
+    start_date=datetime(2023, 1, 1),
+    schedule="@continuous",
+    max_active_runs=1, 
     catchup=False,
     tags=[],
     default_args={

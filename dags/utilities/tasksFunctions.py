@@ -38,7 +38,7 @@ def get_last_version(project: dict):
 def get_new_version_list(project:dict, last_version_analyzed:dict):
     version_list = gitHubRepository.get_version_list(project, last_version_analyzed)
     if (len(version_list) == 0):
-        last_commit = gitHubRepository.get_last_commit(project)
+        last_commit = gitHubRepository.get_last_commit(project, last_version_analyzed)
         if (last_commit and ((not last_version_analyzed) or (last_version_analyzed['id_github'] != str(last_commit['id_github'])))):
             return [last_commit]
     else:

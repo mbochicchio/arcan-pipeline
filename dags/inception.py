@@ -1,5 +1,5 @@
-import pendulum
-from airflow.decorators import dag, task, task_group
+from pendulum import datetime
+from airflow.decorators import dag, task
 from utilities import tasksFunctions, constants
 from airflow.exceptions import AirflowFailException
 from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiValidationFailedException
@@ -16,7 +16,7 @@ def get_project_range():
 def get_last_version(project: dict):
     return {'project': project, 'last_version_analyzed':tasksFunctions.get_last_version(project=project)}
 
-@task(trigger_rule='all_done', retries=constants.GIT_REST_API_RETRIES, retry_delay=constants.GIT_REST_API_RETRY_DELAY, max_retry_delay=constants.GIT_REST_API_MAX_RETRY_DELAY)
+@task(trigger_rule='all_done', retries=constants.GIT_REST_API_RETRIES, retry_delay=constants.GIT_REST_API_RETRY_DELAY)
 def get_new_version_list(arg: dict):
     project = arg['project']
     last_version_analyzed = arg['last_version_analyzed']
@@ -35,8 +35,8 @@ def update_project_range(project_range: dict, project_list: int):
     tasksFunctions.update_project_range(project_range=project_range, number_of_projects_considered = number_of_projects_considered)
 
 @dag( 
-    schedule=None,
-    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    schedule="@hourly", 
+    start_date=datetime(2023, 1, 1),
     catchup=False,
     tags=[],
     default_args={
