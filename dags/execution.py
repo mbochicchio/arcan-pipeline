@@ -44,9 +44,9 @@ def execute(version: dict, arcan_version: dict):
                 raise AirflowFailException(e)
 
     @task(priority_weight=2, retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
-    def save_dependency_graph(dependency_graph: dict):
+    def save_dependency_graph(output_file_path: str, version: dict):
             try:
-                return tasksFunctions.save_dependency_graph(dependency_graph=dependency_graph)
+                return tasksFunctions.save_dependency_graph(output_file_path=output_file_path, version=version)
             except ArcanOutputNotFoundException as e:
                 raise AirflowFailException(e)
             
@@ -57,18 +57,18 @@ def execute(version: dict, arcan_version: dict):
             except (ArcanImageNotFoundException, ArcanExecutionException) as e:
                 raise AirflowFailException(e)
 
-    @task(priority_weight=2, retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
-    def save_analysis(analysis:dict):
+    @task(priority_weight=2, trigger_rule='all_done', retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
+    def save_analysis(output_file_path:str, version:dict, arcan_version: dict):
             try:
-                tasksFunctions.save_analysis(analysis=analysis)
+                tasksFunctions.save_analysis(output_file_path=output_file_path, version=version, arcan_version=arcan_version)
             except ArcanOutputNotFoundException as e:
                 raise AirflowFailException(e)
 
     check = check(version=version)
     parsing =  create_dependency_graph(version=version, arcan_version=arcan_version)
-    save_parsing_task = save_dependency_graph(dependency_graph=parsing)
+    save_parsing_task = save_dependency_graph(output_file_path=parsing, version=version)
     analysis = create_analysis(version=version, arcan_version=arcan_version)
-    save_analysis_task = save_analysis(analysis = analysis)
+    save_analysis_task = save_analysis(output_file_path = analysis, version=version, arcan_version=arcan_version)
     delete_version_directory_task = delete_version_directory(version)
     create_version_directory(version) >> check
     check >> parsing >> save_parsing_task >> analysis >> save_analysis_task >> delete_version_directory_task

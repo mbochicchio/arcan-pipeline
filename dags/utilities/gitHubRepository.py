@@ -39,11 +39,8 @@ def get_version_list(project: dict, last_version_analyzed: dict):
             raise GitRestApiException(f'API response: {response.status_code} with reason: {response.reason}')
     return version_list
 
-def get_last_commit(project: dict, last_version_analyzed: dict):
-    if last_version_analyzed:
-        url = f"{ENDPOINT}/repos/{project['name']}/commits/{project['repository']['branch']}?since={datetime.datetime.strptime(last_version_analyzed['date'], '%Y-%m-%d %H:%M:%S') + datetime.timedelta(weeks=4)}"
-    else:
-        url = f"{ENDPOINT}/repos/{project['name']}/commits/{project['repository']['branch']}"
+def get_last_commit(project: dict):
+    url = f"{ENDPOINT}/repos/{project['name']}/commits/{project['repository']['branch']}"
     complete = False
     while (not complete):
         response = requests.get(url, auth=auth)

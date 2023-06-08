@@ -1,5 +1,5 @@
 from utilities.mySqlGateway import MySqlGateway
-from datetime import datetime
+import datetime
 from math import floor, log10
 from utilities import model, fileManager, dockerRunner, gitHubRepository
 
@@ -37,15 +37,16 @@ def get_last_version(project: dict):
 
 def get_new_version_list(project:dict, last_version_analyzed:dict):
     version_list = gitHubRepository.get_version_list(project, last_version_analyzed)
-    if (len(version_list) == 0):
-        last_commit = gitHubRepository.get_last_commit(project, last_version_analyzed)
-        if (last_commit and ((not last_version_analyzed) or (last_version_analyzed['id_github'] != str(last_commit['id_github'])))):
+    number_of_version = len(version_list)
+    if (number_of_version == 0):
+        last_commit = gitHubRepository.get_last_commit(project)
+        if (last_commit and ((not last_version_analyzed) or ((datetime.datetime.strptime(last_commit['date'], "%Y-%m-%dT%H:%M:%SZ") - datetime.datetime.strptime(last_version_analyzed['date'], "%Y-%m-%d %H:%M:%S")).days > 30 ))):
             return [last_commit]
     else:
-        number_of_version = len(version_list)
         if last_version_analyzed and (last_version_analyzed['id_github'] == version_list[number_of_version-1]['id_github']):
             version_list.pop()
-        if (number_of_version != 0):
+            number_of_version -= 1
+        if (number_of_version > 0):
             max_number_of_version_to_consider = floor(6*log10(number_of_version+1))
             if max_number_of_version_to_consider < number_of_version:
                 indices = [int(i * (number_of_version-1) / (max_number_of_version_to_consider-1)) for i in range(max_number_of_version_to_consider)]
@@ -74,29 +75,30 @@ def create_dependency_graph(version:dict, arcan_version:dict):
     gw = MySqlGateway()
     project = gw.get_project_by_id(version['project'])
     dockerRunner.execute_parsing(version_id=version['id'], project_language=project['language'], arcan_image=arcan_version['version'])
-    output_path = fileManager.get_output_file_path(output_type="dependency-graph", version_id=version['id'])
-    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    dependency_graph = model.dependency_graph(None, now, output_path, version['id'])
-    return dependency_graph
+    output_file_path = fileManager.get_output_file_path(output_type="dependency-graph", version_id=version['id'])
+    return output_file_path
 
 def create_analysis(version:dict, arcan_version:dict):
     gw = MySqlGateway()
     project = gw.get_project_by_id(version['project'])
     dockerRunner.execute_analysis(version_id=version['id'], project_language=project['language'], arcan_image=arcan_version['version'])
     output_file_path = fileManager.get_output_file_path(output_type="analysis", version_id=version['id'])
-    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    analysis = model.analysis(None, now, output_file_path, version['id'], arcan_version['id'])
-    return analysis
+    return output_file_path
 
-def save_dependency_graph(dependency_graph:dict):
-    output_file_path = dependency_graph['file_result']
-    dependency_graph['file_result'] = fileManager.get_blob_from_file(output_file_path)
+def save_dependency_graph(output_file_path:str, version: dict):
+    now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    file = fileManager.get_blob_from_file(output_file_path)
+    dependency_graph = model.dependency_graph(None, now, file, version['id'])
     gw = MySqlGateway()
     gw.add_dependency_graph(dependency_graph)
 
-def save_analysis(analysis:dict):
-    file_result_path = analysis['file_result']
-    analysis['file_result'] = fileManager.get_blob_from_file(file_result_path)
+def save_analysis(output_file_path:str, version:dict, arcan_version: dict):
+    now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    if output_file_path:
+        file = fileManager.get_blob_from_file(output_file_path)
+        analysis = model.analysis(None, now, file, version['id'], arcan_version['id'])
+    else:
+        analysis = model.analysis(None, now, None, version['id'], arcan_version['id'])
     gw = MySqlGateway()
     gw.add_analysis(analysis)
 
