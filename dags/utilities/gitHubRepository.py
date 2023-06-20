@@ -16,9 +16,7 @@ def get_version_list(project: dict, last_version_analyzed: dict):
     version_list = []
     while (not complete):
         url = f"{ENDPOINT}/repos/{project['name']}/releases?page={page_number}&per_page={PER_PAGE}"
-        print(auth)
         response = requests.get(url, auth=auth)
-        print(response.headers['x-ratelimit-remaining'])
         if response.status_code == 200:
             response_release_list = json.loads(response.content)
             for item in response_release_list:
