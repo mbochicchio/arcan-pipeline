@@ -19,6 +19,7 @@ def execute_container(cmd: str, arcan_image: str):
     except docker.errors.APIError as e:
         raise DockerApiException("Docker API Exception:", e)
     except docker.errors.ContainerError as e:
+        output = e.stdout.decode('utf-8').split("\n")
         raise ArcanExecutionException("Arcan Exception:", e.stderr.decode('utf-8'))
     except docker.errors.ImageNotFound as e:
         raise ArcanImageNotFoundException("Arcan Image not found:", e)
