@@ -1,5 +1,6 @@
 from utilities.mySqlGateway import MySqlGateway
 import datetime
+import pytz
 from math import floor, log10
 from utilities import model, fileManager, dockerRunner, gitHubRepository
 
@@ -86,14 +87,14 @@ def create_analysis(version:dict, arcan_version:dict):
     return output_file_path
 
 def save_dependency_graph(output_file_path:str, version: dict):
-    now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
     file = fileManager.get_blob_from_file(output_file_path)
     dependency_graph = model.dependency_graph(None, now, file, version['id'])
     gw = MySqlGateway()
     gw.add_dependency_graph(dependency_graph)
 
 def save_analysis(output_file_path:str, version:dict, arcan_version: dict):
-    now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
     if output_file_path:
         file = fileManager.get_blob_from_file(output_file_path)
         analysis = model.analysis(None, now, file, version['id'], arcan_version['id'])

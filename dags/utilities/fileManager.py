@@ -15,7 +15,8 @@ def create_dir(path: str):
         mkdir_cmd = f"mkdir -p {path}"
         subprocess.run(mkdir_cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        raise MakeDirException(e.output, path)
+        raise MakeDirException(e.stderr, path)
+
 
 def delete_dir(path: str):
     try: 
@@ -23,8 +24,8 @@ def delete_dir(path: str):
             rmdir_cmd = f"rm -r {path}"
             subprocess.run(rmdir_cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        raise DeleteDirException(e.output, path)       
-        
+        raise DeleteDirException(e.stderr, path)       
+
 def get_output_file_path(output_type: str, version_id:dict):
     result_path = get_output_path(output_type=output_type, version_id=version_id)
     for file_name in os.listdir(result_path):
@@ -39,14 +40,16 @@ def clone_repository(project_name: str, project_path: str):
         cmd_clone = f"git clone https://github.com/{project_name}.git {project_path}"
         subprocess.run(cmd_clone, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        raise CloneRepositoryException(e.output)
+        raise CloneRepositoryException(e.stderr)
+
 
 def checkout_repository(version: str, project_dir: str):
     try: 
         cmd_clone = f"git --git-dir={project_dir}/.git checkout -q -f {version}"
         subprocess.run(cmd_clone, shell=True, check=True,capture_output=True)
     except subprocess.CalledProcessError as e:
-        raise CheckoutRepositoryException(e.output)
+        raise CheckoutRepositoryException(e.stderr)
+    
 
 def get_blob_from_file(file_path: str):
     if os.path.exists(file_path):
