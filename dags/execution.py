@@ -40,7 +40,7 @@ def execute(version: dict, arcan_version: dict):
     def create_dependency_graph(version: dict, arcan_version: dict):
             try:
                 return tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
-            except (ArcanImageNotFoundException, ArcanExecutionException) as e:
+            except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
                 raise AirflowFailException(e)
 
     @task(priority_weight=2, retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
@@ -54,7 +54,7 @@ def execute(version: dict, arcan_version: dict):
     def create_analysis(version:dict, arcan_version:dict):  
             try:  
                 return tasksFunctions.create_analysis(version, arcan_version)
-            except (ArcanImageNotFoundException, ArcanExecutionException) as e:
+            except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
                 raise AirflowFailException(e)
 
     @task(priority_weight=2, trigger_rule='all_done', retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
