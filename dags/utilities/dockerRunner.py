@@ -13,19 +13,19 @@ def execute_parsing(version_id: int, project_language:str, arcan_image: str):
 def execute_container(cmd: str, arcan_image: str):
     os.environ['DOCKER_HOST'] = 'tcp://host.docker.internal:2375'
     client = docker.from_env()
-    output = []
     try:
-        output = client.containers.run(image=arcan_image, command=cmd, user=50000, remove=True, volumes={'arcan-pipeline_shared-volume': {'bind': '/projects', 'mode': 'rw'}}, detach=False, stdout=True, stderr=True, stream=True)
+        container = client.containers.run(image=arcan_image, user=50000, volumes={'arcan-pipeline_shared-volume': {'bind': '/projects', 'mode': 'rw'}}, detach=True)
+        container.exec_run(cmd=cmd, detach=False)
     except docker.errors.APIError as e:
         raise DockerApiException("Docker API Exception:", e)
     except docker.errors.ContainerError as e:
-        output = e.stdout.decode('utf-8').split("\n")
-        raise ArcanExecutionException("Arcan Exception:", e.stderr.decode('utf-8'))
+        raise ArcanExecutionException("Arcan Exception:", e)
     except docker.errors.ImageNotFound as e:
         raise ArcanImageNotFoundException("Arcan Image not found:", e)
     except docker.errors.DockerException as e:
         raise DockerException("Generic exception in Docker:", e)
     finally:
+        logs = container.logs(stream=True)
         print("Arcan container log:")
-        for line in output:
+        for line in logs:
             print(line)
