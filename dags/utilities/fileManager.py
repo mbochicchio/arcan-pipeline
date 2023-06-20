@@ -33,7 +33,7 @@ def get_output_file_path(output_type: str, version_id:dict):
             result_path += f"/{file_name}"
             return result_path
     else:
-        return None
+        return ""
 
 def clone_repository(project_name: str, project_path: str):
     try:
