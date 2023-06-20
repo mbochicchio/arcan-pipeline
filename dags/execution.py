@@ -36,7 +36,7 @@ def execute(version: dict, arcan_version: dict):
             return 'execute.create_dependency_graph'
         return 'execute.create_analysis'
 
-    @task(priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
+    @task(pool="docker_run_pool", priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
     def create_dependency_graph(version: dict, arcan_version: dict):
             try:
                 return tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
@@ -50,7 +50,7 @@ def execute(version: dict, arcan_version: dict):
             except ArcanOutputNotFoundException as e:
                 raise AirflowFailException(e)
             
-    @task(priority_weight=2, trigger_rule='none_failed_min_one_success', retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
+    @task(pool="docker_run_pool", priority_weight=2, trigger_rule='none_failed_min_one_success', retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
     def create_analysis(version:dict, arcan_version:dict):  
             try:  
                 return tasksFunctions.create_analysis(version, arcan_version)
