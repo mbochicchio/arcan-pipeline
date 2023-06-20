@@ -33,7 +33,7 @@ def get_output_file_path(output_type: str, version_id:dict):
             result_path += f"/{file_name}"
             return result_path
     else:
-        raise ArcanOutputNotFoundException(f"{output_type} file not found of version {version_id}")
+        return None
 
 def clone_repository(project_name: str, project_path: str):
     try:
