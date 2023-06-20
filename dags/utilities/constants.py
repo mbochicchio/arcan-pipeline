@@ -1,4 +1,4 @@
-from pendulum import datetime, duration
+from pendulum import duration
 
 #DEFAULT ARGUMENTS
 DEFAULT_OWNER = "Airflow"

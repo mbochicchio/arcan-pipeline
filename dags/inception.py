@@ -35,7 +35,7 @@ def update_project_range(project_range: dict, project_list: int):
     tasksFunctions.update_project_range(project_range=project_range, number_of_projects_considered = number_of_projects_considered)
 
 @dag( 
-    schedule="@hourly", 
+    schedule="@daily", 
     start_date=datetime(2023, 1, 1),
     catchup=False,
     tags=[],
