@@ -1,3 +1,9 @@
+class SettingsException(Exception):
+    pass
+
+class ProjectNotFoundException(Exception):
+    pass
+
 class ArcanOutputNotFoundException(Exception):
     pass
 

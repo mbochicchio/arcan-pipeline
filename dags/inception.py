@@ -4,11 +4,11 @@ from utilities import tasksFunctions, constants
 from airflow.exceptions import AirflowFailException
 from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiValidationFailedException
 
-@task(retries=constants.MYSQL_RETRIES, retry_delay= constants.MYSQL_RETRY_DELAY)
+@task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
 def get_project_list(project_range: dict):
     return tasksFunctions.get_project_list(project_range)
 
-@task(retries=constants.MYSQL_RETRIES, retry_delay= constants.MYSQL_RETRY_DELAY)
+@task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
 def get_project_range():
     return tasksFunctions.get_project_range()
 

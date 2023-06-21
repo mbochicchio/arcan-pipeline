@@ -4,15 +4,15 @@ from utilities import tasksFunctions, constants
 from utilities.customException import ArcanOutputNotFoundException, CloneRepositoryException, CheckoutRepositoryException, ArcanImageNotFoundException, ArcanExecutionException
 from airflow.exceptions import AirflowFailException
 
-@task
+@task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
 def get_version_list(version_range: int, arcan_version: dict):
     return tasksFunctions.get_version_list(version_range=version_range, arcan_version=arcan_version)
 
-@task
+@task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
 def get_arcan_version():
     return tasksFunctions.get_arcan_version()
 
-@task
+@task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
 def get_version_range():
     return tasksFunctions.get_version_range()
 

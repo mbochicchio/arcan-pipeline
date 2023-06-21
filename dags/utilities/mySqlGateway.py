@@ -2,6 +2,7 @@ from airflow.providers.mysql.hooks.mysql import MySqlHook
 from typing import List, Tuple
 from datetime import datetime
 from utilities import model
+from utilities.customException import SettingsException, ProjectNotFoundException
 
 class MySqlGateway():
     def __init__(self):
@@ -26,7 +27,8 @@ class MySqlGateway():
         if len(myresult) > 0:
             for item in myresult:
                 return model.project(item[0], model.repository(item[3], item[4], item[5], item[6], item[7]), item[1], item[2])
-        return None
+        else:
+            raise ProjectNotFoundException(f"Progetto {project_id} non trovato nel database")
 
     def get_projects_list(self, first_index, range):
         sql = f"SELECT P.id, P.language, P.name, R.id, R.project_repository, R.branch, R.username, R.password FROM Project AS P JOIN Repository AS R ON P.id_repository = R.id WHERE P.id >= {first_index} ORDER BY P.id ASC LIMIT {range}"
@@ -35,7 +37,9 @@ class MySqlGateway():
         if len(myresult) > 0:
             for item in myresult:
                 project_list.append(model.project(item[0], model.repository(item[3], item[4], item[5], item[6], item[7]), item[1], item[2]))
-        return project_list
+            return project_list
+        else:
+            raise SettingsException("Lista progetti vuota")
 
     def get_setting_by_name(self, name: str):
         sql = f"SELECT value FROM Settings WHERE name='{name}'"
@@ -43,7 +47,7 @@ class MySqlGateway():
         if len(myresult) > 0:
             return myresult[0][0]
         else:
-            return None
+            raise SettingsException(f"Setting {name} non trovata")
         
     def update_setting_by_name(self, name: str, value: str):
         sql = "UPDATE Settings SET value=%s WHERE name=%s"
@@ -64,7 +68,18 @@ class MySqlGateway():
         if len(myresult) > 0:
             return model.arcan_version(myresult[0][0], myresult[0][2], str(myresult[0][1]))
         else:
-            return None
+            raise SettingsException("Versione di Arcan non trovata")
+
+    def get_versions_list(self, arcan_version_id: str, limit: int):
+        sql = f"SELECT T.id, T.id_github, T.date, T.id_project, D.id FROM (SELECT DISTINCT * FROM Version AS V WHERE NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id}) LIMIT {limit}) AS T LEFT JOIN DependencyGraph AS D ON D.project_version = T.id"
+        myresult = self.__execute_query__(sql)
+        version_list = []
+        if len(myresult) > 0:
+            for item in myresult:
+                version_list.append(model.version(item[0], item[1], str(item[2]), item[3], None, item[4]))
+            return version_list
+        else:
+            raise SettingsException("Lista versioni vuota")
 
     def add_version(self, version: dict):
         sql = "INSERT INTO Version (id_github, date, id_project) VALUES (%s, %s, %s)"
@@ -80,15 +95,6 @@ class MySqlGateway():
         sql = "INSERT INTO Repository (url_github, branch, username, password) VALUES (%s, %s, %s, %s)"
         data = (repository['url_github'], repository['branch'], repository['username'], repository['password'])
         self.__execute_transaction__(sql, data)
-
-    def get_versions_list(self, arcan_version_id: str, limit: int):
-        sql = f"SELECT T.id, T.id_github, T.date, T.id_project, D.id FROM (SELECT DISTINCT * FROM Version AS V WHERE NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id}) LIMIT {limit}) AS T LEFT JOIN DependencyGraph AS D ON D.project_version = T.id"
-        myresult = self.__execute_query__(sql)
-        version_list = []
-        if len(myresult) > 0:
-            for item in myresult:
-                version_list.append(model.version(item[0], item[1], str(item[2]), item[3], None, item[4]))
-        return version_list
 
     def add_dependency_graph(self, dependency_graph: dict):
         sql = "INSERT INTO DependencyGraph (date_parsing, file_result, project_version) VALUES (%s, %s, %s)"
