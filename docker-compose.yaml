@@ -116,8 +116,8 @@ services:
     image: postgres:13
     command: postgres -c 'max_stack_depth'=7680
     environment:
-      POSTGRES_USER: {_POSTGRES_USERNAME:-airflow}
-      POSTGRES_PASSWORD: {_POSTGRES_PASSWORD:-airflow}
+      POSTGRES_USER: ${_POSTGRES_USERNAME:-airflow}
+      POSTGRES_PASSWORD: ${_POSTGRES_PASSWORD:-airflow}
       POSTGRES_DB: airflow
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
