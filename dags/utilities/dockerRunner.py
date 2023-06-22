@@ -7,11 +7,10 @@ def execute_analysis(version_id: int, project_language:str, arcan_image: str):
     execute_container(cmd, arcan_image, version_id)
 
 def execute_parsing(version_id: int, project_language:str, arcan_image: str):
-    cmd = f'analyse -i /projects/{version_id} -o /projects/dependency-graph -l {project_language} --vcs NO_VCS output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
+    cmd = f'analyse -i /projects/{version_id} -o /projects/dependency-graph -l {project_language} --vcs NO_VCS metrics.componentMetrics="none" metrics.smellCharacteristics="none" metrics.projectMetrics="none" metrics.indexCalculators="none" output.writeDependencyGraph=true output.writeSmellCharacteristics=false output.writeComponentMetrics=false output.writeAffected=false output.writeProjectMetrics=false'
     execute_container(cmd, arcan_image, version_id)
 
 def execute_container(cmd: str, arcan_image: str, version_id: int):
-    os.environ['DOCKER_HOST'] = 'tcp://host.docker.internal:2375'
     client = docker.from_env()
     try:
         container_name = f'arcan_container_{version_id}'

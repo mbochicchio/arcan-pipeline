@@ -1,4 +1,3 @@
-import datetime
 import json
 from utilities import model
 from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiException, GitRestApiValidationFailedException
