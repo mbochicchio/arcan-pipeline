@@ -75,6 +75,9 @@ x-airflow-common:
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     # connection to MySql database
     AIRFLOW_CONN_MYSQL: mysql://${_MYSQL_USERNAME:-user}:${_MYSQL_PASSWORD:-password}@mysql:3306/database
+    # limitare processo di parsing dei dag ogni 24 ore
+    AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 86400
+    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 86400 
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
