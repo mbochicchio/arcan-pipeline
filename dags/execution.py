@@ -64,7 +64,7 @@ def execute(version: dict, arcan_version: dict):
             except ArcanOutputNotFoundException as e:
                 raise AirflowFailException(e)
 
-    @task(priority_weight=2, trigger_rule='all_failed', retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
+    @task(priority_weight=2, trigger_rule='one_failed', retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
     def save_empty_analysis(version:dict, arcan_version: dict):
             tasksFunctions.save_analysis(output_file_path=None, version=version, arcan_version=arcan_version)
 
