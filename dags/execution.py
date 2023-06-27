@@ -57,27 +57,23 @@ def execute(version: dict, arcan_version: dict):
             except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
                 raise AirflowFailException(e)
 
-    @task(priority_weight=2, retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
+    @task(priority_weight=2, trigger_rule='all_done', retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
     def save_analysis(output_file_path:str, version:dict, arcan_version: dict):
             try:
                 tasksFunctions.save_analysis(output_file_path=output_file_path, version=version, arcan_version=arcan_version)
-            except ArcanOutputNotFoundException as e:
+            except Exception as e:
+                tasksFunctions.save_analysis(output_file_path=None, version=version, arcan_version=arcan_version)
                 raise AirflowFailException(e)
-
-    @task(priority_weight=2, trigger_rule='one_failed', retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
-    def save_empty_analysis(version:dict, arcan_version: dict):
-            tasksFunctions.save_analysis(output_file_path=None, version=version, arcan_version=arcan_version)
 
     check = check(version=version)
     parsing =  create_dependency_graph(version=version, arcan_version=arcan_version)
     save_parsing_task = save_dependency_graph(output_file_path=parsing, version=version)
     analysis = create_analysis(version=version, arcan_version=arcan_version)
     save_analysis_task = save_analysis(output_file_path = analysis, version=version, arcan_version=arcan_version)
-    save_empty_analysis_task = save_empty_analysis(version=version, arcan_version=arcan_version)
     delete_version_directory_task = delete_version_directory(version)
     create_version_directory(version) >> check
-    check >> parsing >> save_parsing_task >> analysis >> save_analysis_task >> save_empty_analysis_task >> delete_version_directory_task
-    check >> analysis >> save_analysis_task >> save_empty_analysis_task >> delete_version_directory_task
+    check >> parsing >> save_parsing_task >> analysis >> save_analysis_task >> delete_version_directory_task
+    check >> analysis >> save_analysis_task >> delete_version_directory_task
 
 @dag(
     start_date=datetime(2023, 1, 1),
