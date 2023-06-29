@@ -39,8 +39,7 @@ def get_output_file_name(output_type: str, version_id:dict):
     for file_name in os.listdir(result_path):
         if file_name.startswith("dependency-graph-"):
             return file_name
-        else:
-            raise ArcanOutputNotFoundException(f"Arcan Output file not found: {result_path}")
+    raise ArcanOutputNotFoundException(f"Arcan Output file not found: {result_path}")
 
 def clone_repository(project_name: str, project_path: str):
     try:
