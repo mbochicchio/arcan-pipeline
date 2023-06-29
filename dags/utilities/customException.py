@@ -4,6 +4,9 @@ class SettingsException(Exception):
 class ProjectNotFoundException(Exception):
     pass
 
+class DependencyGraphNotFoundException(Exception):
+    pass
+
 class ArcanOutputNotFoundException(Exception):
     pass
 

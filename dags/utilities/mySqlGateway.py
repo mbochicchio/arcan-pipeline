@@ -2,7 +2,7 @@ from airflow.providers.mysql.hooks.mysql import MySqlHook
 from typing import List, Tuple
 from datetime import datetime
 from utilities import model
-from utilities.customException import SettingsException, ProjectNotFoundException
+from utilities.customException import SettingsException, ProjectNotFoundException, DependencyGraphNotFoundException
 
 class MySqlGateway():
     def __init__(self):
@@ -80,6 +80,15 @@ class MySqlGateway():
             return version_list
         else:
             raise SettingsException("Lista versioni vuota")
+
+    def get_dependency_graph_by_id(self, dependency_graph_id: str):
+        sql = f"SELECT file_result FROM DependencyGraph WHERE id={dependency_graph_id}"
+        myresult = self.__execute_query__(sql)
+        if len(myresult) > 0:
+            return myresult[0][0]
+        else:
+            raise DependencyGraphNotFoundException(f"Dependency Graph {dependency_graph_id} non trovato")     
+
 
     def add_version(self, version: dict):
         sql = "INSERT INTO Version (id_github, date, id_project) VALUES (%s, %s, %s)"

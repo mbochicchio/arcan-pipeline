@@ -45,7 +45,7 @@ def clone_repository(project_name: str, project_path: str):
 
 def checkout_repository(version: str, project_dir: str):
     try: 
-        cmd_clone = f"git --git-dir={project_dir}/.git checkout -q -f {version}"
+        cmd_clone = f"git -C {project_dir} checkout -q -f {version}"
         subprocess.run(cmd_clone, shell=True, check=True,capture_output=True)
     except subprocess.CalledProcessError as e:
         raise CheckoutRepositoryException(e.stderr)
@@ -58,3 +58,8 @@ def get_blob_from_file(file_path: str):
         return blob
     else: 
         raise ArcanOutputNotFoundException(f"Arcan Output file not found: {file_path}")
+
+def write_file(data, path):
+    file_path = f"{path}/dependency-graph-loaded.graphml"
+    with open(file_path, 'wb') as file:
+        file.write(data)

@@ -79,10 +79,18 @@ def create_dependency_graph(version:dict, arcan_version:dict):
     output_file_path = fileManager.get_output_file_path(output_type="dependency-graph", version_id=version['id'])
     return output_file_path
 
+def load_dependency_graph(version: dict):
+    gw = MySqlGateway()
+    dependency_graph_blob = gw.get_dependency_graph_by_id(version['dependency_graph'])
+    file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id'])
+    fileManager.create_dir(path=file_path)
+    fileManager.write_file(data=dependency_graph_blob, path=file_path)
+
 def create_analysis(version:dict, arcan_version:dict):
     gw = MySqlGateway()
     project = gw.get_project_by_id(version['project'])
-    dockerRunner.execute_analysis(version_id=version['id'], project_language=project['language'], arcan_image=arcan_version['version'])
+    dependency_graph_path = fileManager.get_output_file_path(output_type="dependency-graph", version_id=version['id'])
+    dockerRunner.execute_analysis(version=version, project_language=project['language'], arcan_image=arcan_version['version'], dependency_graph_path=dependency_graph_path)
     output_file_path = fileManager.get_output_file_path(output_type="analysis", version_id=version['id'])
     return output_file_path
 
