@@ -32,8 +32,7 @@ def get_output_file_path(output_type: str, version_id:dict):
         if file_name.startswith("dependency-graph-"):
             result_path += f"/{file_name}"
             return result_path
-        else:
-            raise ArcanOutputNotFoundException(f"Arcan Output file not found: {result_path}")
+    raise ArcanOutputNotFoundException(f"Arcan Output file not found: {result_path}")
 
 def get_output_file_name(output_type: str, version_id:dict):
     result_path = get_output_path(output_type=output_type, version_id=version_id)
