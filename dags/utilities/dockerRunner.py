@@ -13,7 +13,7 @@ def execute_container(cmd: str, arcan_image: str, version_id: int):
     client = docker.from_env()
     try:
         container_name = f'arcan_container_{version_id}'
-        client.containers.run(image=arcan_image, command=cmd, user=50000, name=container_name, entrypoint=["timeout", "4h", "/arcan-cli/arcan.sh"] volumes={'arcan-pipeline_shared-volume': {'bind': '/projects', 'mode': 'rw'}}, detach=False, mem_limit='3g', environment=["JAVA_MEMORY=4G"])
+        client.containers.run(image=arcan_image, command=cmd, user=50000, name=container_name, entrypoint=["timeout", "4h", "/arcan-cli/arcan.sh"], volumes={'arcan-pipeline_shared-volume': {'bind': '/projects', 'mode': 'rw'}}, detach=False, mem_limit='3g', environment=["JAVA_MEMORY=4G"])
 
     except docker.errors.APIError as e:
         raise DockerApiException("Docker API Exception:", e)
