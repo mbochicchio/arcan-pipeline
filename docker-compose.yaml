@@ -147,7 +147,7 @@ services:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8080:8080"
+      - "5000:5000"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
@@ -334,7 +334,7 @@ services:
 
 volumes:
   postgres-db-volume:
-  mysql-db-volume:
+#  mysql-db-volume:
   shared-volume:
 
     
