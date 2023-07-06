@@ -96,7 +96,7 @@ def create_analysis(version:dict, arcan_version:dict, dependency_graph_name:str)
 
 def save_dependency_graph(output_file_name:str, version: dict):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
-    output_file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id']) + output_file_name
+    output_file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id']) + "/" +  output_file_name
     file = fileManager.get_blob_from_file(output_file_path)
     dependency_graph = model.dependency_graph(None, now, file, version['id'])
     gw = MySqlGateway()
