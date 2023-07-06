@@ -61,7 +61,9 @@ def execute(version: dict, arcan_version: dict):
                 tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
                 raise AirflowFailException(e)
     
-    create_version_directory(version) >> create_analysis(version, arcan_version, get_dependency_graph(version, arcan_version)) >> delete_version_directory(version)
+    get_dependency_graph_task = get_dependency_graph(version, arcan_version)
+    create_analysis_task = create_analysis(version, arcan_version, get_dependency_graph_task)
+    create_version_directory(version) >> get_dependency_graph_task >> create_analysis_task >> delete_version_directory(version)
 
 
 @dag(
