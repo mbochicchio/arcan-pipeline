@@ -76,26 +76,27 @@ def create_dependency_graph(version:dict, arcan_version:dict):
     gw = MySqlGateway()
     project = gw.get_project_by_id(version['project'])
     dockerRunner.execute_parsing(version_id=version['id'], project_language=project['language'], arcan_image=arcan_version['version'])
-    output_file_path = fileManager.get_output_file_path(output_type="dependency-graph", version_id=version['id'])
-    return output_file_path
+    output_file_name = fileManager.get_output_file_name(output_type="dependency-graph", version_id=version['id'])
+    return output_file_name
 
 def load_dependency_graph(version: dict):
     gw = MySqlGateway()
     dependency_graph_blob = gw.get_dependency_graph_by_id(version['dependency_graph'])
     file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id'])
     fileManager.create_dir(path=file_path)
-    fileManager.write_file(data=dependency_graph_blob, path=file_path)
+    output_file_name = fileManager.write_file(data=dependency_graph_blob, path=file_path)
+    return output_file_name
 
-def create_analysis(version:dict, arcan_version:dict):
+def create_analysis(version:dict, arcan_version:dict, dependency_graph_name:str):
     gw = MySqlGateway()
     project = gw.get_project_by_id(version['project'])
-    dependency_graph_name = fileManager.get_output_file_name(output_type="dependency-graph", version_id=version['id'])
     dockerRunner.execute_analysis(version=version, project_language=project['language'], arcan_image=arcan_version['version'], dependency_graph_name=dependency_graph_name)
     output_file_path = fileManager.get_output_file_path(output_type="analysis", version_id=version['id'])
     return output_file_path
 
-def save_dependency_graph(output_file_path:str, version: dict):
+def save_dependency_graph(output_file_name:str, version: dict):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
+    output_file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id']) + output_file_name
     file = fileManager.get_blob_from_file(output_file_path)
     dependency_graph = model.dependency_graph(None, now, file, version['id'])
     gw = MySqlGateway()
@@ -110,6 +111,9 @@ def save_analysis(output_file_path:str, version:dict, arcan_version: dict):
         analysis = model.analysis(None, now, None, version['id'], arcan_version['id'])
     gw = MySqlGateway()
     gw.add_analysis(analysis)
+
+def save_failed_analysis(version:dict, arcan_version: dict):
+    save_analysis(output_file_path=None, version=version, arcan_version=arcan_version)
 
 def delete_version_directory(version_id: dict):
     version_path = fileManager.get_version_path(version_id)

@@ -56,7 +56,6 @@ def checkout_repository(version: str, project_dir: str):
     except subprocess.CalledProcessError as e:
         raise CheckoutRepositoryException(e.stderr)
     
-
 def get_blob_from_file(file_path: str):
     if os.path.exists(file_path):
         with open(file_path, "rb") as file:
@@ -69,3 +68,4 @@ def write_file(data, path):
     file_path = f"{path}/dependency-graph-loaded.graphml"
     with open(file_path, 'wb') as file:
         file.write(data)
+    return "dependency-graph-loaded.graphml"

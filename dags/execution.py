@@ -16,72 +16,53 @@ def get_arcan_version():
 def get_version_range():
     return tasksFunctions.get_version_range()
 
-@task(priority_weight=1, retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
-def create_version_directory(version:dict):
-    try:
-        tasksFunctions.create_version_directory(version)
-    except (CloneRepositoryException, CheckoutRepositoryException) as e:
-        raise AirflowFailException()
-
-@task(priority_weight=3, trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
-def delete_version_directory(version:dict):
-    tasksFunctions.delete_version_directory(version['id'])
-
 @task_group()
 def execute(version: dict, arcan_version: dict):
 
-    @task.branch()
-    def check(version: dict):
-        if version['dependency_graph'] is None:
-            return 'execute.create_dependency_graph'
-        return 'execute.load_dependency_graph'
+    @task(priority_weight=1, retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
+    def create_version_directory(version:dict):
+        try:
+            tasksFunctions.create_version_directory(version)
+        except (CloneRepositoryException, CheckoutRepositoryException) as e:
+            raise AirflowFailException()
+
+    @task(priority_weight=3, trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
+    def delete_version_directory(version:dict):
+        tasksFunctions.delete_version_directory(version['id'])
 
     @task(pool="docker_run_pool", priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
-    def create_dependency_graph(version: dict, arcan_version: dict):
-            try:
-                return tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
-            except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
-                raise AirflowFailException(e)
+    def get_dependency_graph(version: dict, arcan_version: dict):
+            if version['dependency_graph'] is None:
+                try:
+                    dependency_graph_file_name = tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
+                    tasksFunctions.save_dependency_graph(output_file_name=dependency_graph_file_name, version=version)
+                    return dependency_graph_file_name
+                except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
+                    tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
+                    raise AirflowFailException(e)
+            else:
+                try:
+                    dependency_graph_file_name = tasksFunctions.load_dependency_graph(version=version)
+                    return dependency_graph_file_name
+                except DependencyGraphNotFoundException as e:
+                    tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
+                    raise AirflowFailException(e)                
 
-    @task(priority_weight=2, retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
-    def save_dependency_graph(output_file_path: str, version: dict):
-            try:
-                return tasksFunctions.save_dependency_graph(output_file_path=output_file_path, version=version)
-            except ArcanOutputNotFoundException as e:
-                raise AirflowFailException(e)
-
-    @task(priority_weight=2, retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
-    def load_dependency_graph(version: dict):
-            try:
-                return tasksFunctions.load_dependency_graph(version=version)
-            except DependencyGraphNotFoundException as e:
-                raise AirflowFailException(e)
-
-    @task(pool="docker_run_pool", priority_weight=2, trigger_rule='none_failed_min_one_success', retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
-    def create_analysis(version:dict, arcan_version:dict):  
+    @task(pool="docker_run_pool", priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
+    def create_analysis(version:dict, arcan_version:dict, dependency_graph_name: str):  
             try:  
-                return tasksFunctions.create_analysis(version, arcan_version)
+                analysis_path = tasksFunctions.create_analysis(version, arcan_version, dependency_graph_name)
             except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
+                tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
                 raise AirflowFailException(e)
-
-    @task(priority_weight=2, trigger_rule='all_done', retries=constants.MYSQL_RETRIES, retry_delay=constants.MYSQL_RETRY_DELAY)
-    def save_analysis(output_file_path:str, version:dict, arcan_version: dict):
             try:
-                tasksFunctions.save_analysis(output_file_path=output_file_path, version=version, arcan_version=arcan_version)
+                tasksFunctions.save_analysis(output_file_path=analysis_path, version=version, arcan_version=arcan_version)
             except Exception as e:
-                tasksFunctions.save_analysis(output_file_path=None, version=version, arcan_version=arcan_version)
+                tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
                 raise AirflowFailException(e)
+    
+    create_version_directory(version) >> create_analysis(version, arcan_version, get_dependency_graph(version, arcan_version)) >> delete_version_directory(version)
 
-    check = check(version=version)
-    parsing =  create_dependency_graph(version=version, arcan_version=arcan_version)
-    save_parsing_task = save_dependency_graph(output_file_path=parsing, version=version)
-    load_parsing_task = load_dependency_graph(version=version)
-    analysis = create_analysis(version=version, arcan_version=arcan_version)
-    save_analysis_task = save_analysis(output_file_path = analysis, version=version, arcan_version=arcan_version)
-    delete_version_directory_task = delete_version_directory(version)
-    create_version_directory(version) >> check
-    check >> parsing >> save_parsing_task >> analysis >> save_analysis_task >> delete_version_directory_task
-    check >> load_parsing_task >> analysis >> save_analysis_task >> delete_version_directory_task
 
 @dag(
     start_date=datetime(2023, 1, 1),
