@@ -79,13 +79,16 @@ def create_dependency_graph(version:dict, arcan_version:dict):
     output_file_name = fileManager.get_output_file_name(output_type="dependency-graph", version_id=version['id'])
     return output_file_name
 
-def load_dependency_graph(version: dict):
+def get_dependency_graph(version: dict):
     gw = MySqlGateway()
-    dependency_graph_blob = gw.get_dependency_graph_by_id(version['dependency_graph'])
-    file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id'])
-    fileManager.create_dir(path=file_path)
-    output_file_name = fileManager.write_file(data=dependency_graph_blob, path=file_path)
-    return output_file_name
+    dependency_graph_blob = gw.get_dependency_graph_by_version_id(version['id'])
+    if dependency_graph_blob:
+        file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id'])
+        fileManager.create_dir(path=file_path)
+        output_file_name = fileManager.write_file(data=dependency_graph_blob, path=file_path)
+        return output_file_name
+    else:
+        return None
 
 def create_analysis(version:dict, arcan_version:dict, dependency_graph_name:str):
     gw = MySqlGateway()
@@ -94,26 +97,32 @@ def create_analysis(version:dict, arcan_version:dict, dependency_graph_name:str)
     output_file_path = fileManager.get_output_file_path(output_type="analysis", version_id=version['id'])
     return output_file_path
 
-def save_dependency_graph(output_file_name:str, version: dict):
+def save_dependency_graph(output_file_name:str, version: dict, is_completed=True):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
-    output_file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id']) + "/" +  output_file_name
-    file = fileManager.get_blob_from_file(output_file_path)
-    dependency_graph = model.dependency_graph(None, now, file, version['id'])
+    if is_completed:
+        output_file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id']) + "/" +  output_file_name
+        file = fileManager.get_blob_from_file(output_file_path)
+        dependency_graph = model.dependency_graph(None, now, file, version['id'], is_completed)
+    else:
+        dependency_graph = model.dependency_graph(None, now, None, version['id'], is_completed)
     gw = MySqlGateway()
     gw.add_dependency_graph(dependency_graph)
 
-def save_analysis(output_file_path:str, version:dict, arcan_version: dict):
+def save_analysis(output_file_path:str, version:dict, arcan_version: dict, is_completed=True):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
-    if output_file_path:
+    if is_completed:
         file = fileManager.get_blob_from_file(output_file_path)
-        analysis = model.analysis(None, now, file, version['id'], arcan_version['id'])
+        analysis = model.analysis(None, now, file, version['id'], arcan_version['id'], is_completed)
     else:
-        analysis = model.analysis(None, now, None, version['id'], arcan_version['id'])
+        analysis = model.analysis(None, now, None, version['id'], arcan_version['id'], is_completed)
     gw = MySqlGateway()
     gw.add_analysis(analysis)
 
 def save_failed_analysis(version:dict, arcan_version: dict):
-    save_analysis(output_file_path=None, version=version, arcan_version=arcan_version)
+    save_analysis(output_file_path=None, version=version, arcan_version=arcan_version, is_completed=False)
+
+def save_failed_parsing(version:dict, arcan_version: dict):
+    save_dependency_graph(output_file_name=None, version=version, arcan_version=arcan_version, is_completed=False)
 
 def delete_version_directory(version_id: dict):
     version_path = fileManager.get_version_path(version_id)

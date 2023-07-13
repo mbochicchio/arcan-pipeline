@@ -58,7 +58,7 @@ class MySqlGateway():
         sql = f"SELECT * FROM Version WHERE id_project={id_project} ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
-            return model.version(myresult[0][0], myresult[0][1], str(myresult[0][2]), myresult[0][3], None, None)
+            return model.version(myresult[0][0], myresult[0][1], str(myresult[0][2]), myresult[0][3])
         else:
             return None
     
@@ -71,25 +71,24 @@ class MySqlGateway():
             raise SettingsException("Versione di Arcan non trovata")
 
     def get_versions_list(self, arcan_version_id: str, limit: int):
-        sql = f"SELECT T.id, T.id_github, T.date, T.id_project, D.id FROM (SELECT DISTINCT * FROM Version AS V WHERE NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id}) LIMIT {limit}) AS T LEFT JOIN DependencyGraph AS D ON D.project_version = T.id"
+        sql = f"SELECT T.id, T.id_github, T.date, T.id_project FROM (SELECT DISTINCT * FROM Version AS V WHERE NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id}) LIMIT {limit}) AS T"
         myresult = self.__execute_query__(sql)
         version_list = []
         if len(myresult) > 0:
             for item in myresult:
-                version_list.append(model.version(item[0], item[1], str(item[2]), item[3], None, item[4]))
+                version_list.append(model.version(item[0], item[1], str(item[2]), item[3]))
             return version_list
         else:
             raise SettingsException("Lista versioni vuota")
 
-    def get_dependency_graph_by_id(self, dependency_graph_id: str):
-        sql = f"SELECT file_result FROM DependencyGraph WHERE id={dependency_graph_id}"
+    def get_dependency_graph_by_version_id(self, version_id: str):
+        sql = f"SELECT file_result FROM DependencyGraph WHERE project_version={version_id} AND is_completed=True"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return myresult[0][0]
         else:
-            raise DependencyGraphNotFoundException(f"Dependency Graph {dependency_graph_id} non trovato")     
-
-
+            return None
+        
     def add_version(self, version: dict):
         sql = "INSERT INTO Version (id_github, date, id_project) VALUES (%s, %s, %s)"
         data = (version['id_github'], datetime.strptime(version['date'], "%Y-%m-%dT%H:%M:%SZ"), version['project'])
@@ -106,13 +105,13 @@ class MySqlGateway():
         self.__execute_transaction__(sql, data)
 
     def add_dependency_graph(self, dependency_graph: dict):
-        sql = "INSERT INTO DependencyGraph (date_parsing, file_result, project_version) VALUES (%s, %s, %s)"
-        data = (datetime.strptime(dependency_graph['date_parsing'], "%Y-%m-%dT%H:%M:%SZ"), dependency_graph['file_result'], dependency_graph['project_version'])
+        sql = "INSERT INTO DependencyGraph (date_parsing, file_result, project_version, is_completed) VALUES (%s, %s, %s, %s)"
+        data = (datetime.strptime(dependency_graph['date_parsing'], "%Y-%m-%dT%H:%M:%SZ"), dependency_graph['file_result'], dependency_graph['project_version'], dependency_graph['is_completed'])
         self.__execute_transaction__(sql, data)
 
     def add_analysis(self, analysis:dict):
-        sql = "INSERT INTO Analysis (date_analysis, file_result, project_version, arcan_version) VALUES (%s, %s, %s, %s)"
-        data = (datetime.strptime(analysis['date_analysis'], "%Y-%m-%dT%H:%M:%SZ"), analysis['file_result'], analysis['project_version'], analysis['arcan_version'])
+        sql = "INSERT INTO Analysis (date_analysis, file_result, project_version, arcan_version, is_completed) VALUES (%s, %s, %s, %s, %s)"
+        data = (datetime.strptime(analysis['date_analysis'], "%Y-%m-%dT%H:%M:%SZ"), analysis['file_result'], analysis['project_version'], analysis['arcan_version'], analysis['is_completed'])
         self.__execute_transaction__(sql, data)
 
     def get_dependency_graph(self, version:dict):

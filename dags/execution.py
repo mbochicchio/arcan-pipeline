@@ -31,35 +31,31 @@ def execute(version: dict, arcan_version: dict):
         tasksFunctions.delete_version_directory(version['id'])
 
     @task(pool="docker_run_pool", priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
-    def get_dependency_graph(version: dict, arcan_version: dict):
-            if version['dependency_graph'] is None:
-                try:
-                    dependency_graph_file_name = tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
-                    tasksFunctions.save_dependency_graph(output_file_name=dependency_graph_file_name, version=version)
-                    return dependency_graph_file_name
-                except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
-                    tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
-                    raise AirflowFailException(e)
-            else:
-                try:
-                    dependency_graph_file_name = tasksFunctions.load_dependency_graph(version=version)
-                    return dependency_graph_file_name
-                except DependencyGraphNotFoundException as e:
-                    tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
-                    raise AirflowFailException(e)                
+    def get_dependency_graph(version: dict, arcan_version: dict):           
+        dependency_graph_file_name = tasksFunctions.get_dependency_graph(version=version)
+        if not dependency_graph_file_name:
+            try:
+                dependency_graph_file_name = tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
+                tasksFunctions.save_dependency_graph(output_file_name=dependency_graph_file_name, version=version)
+            except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
+                tasksFunctions.save_failed_parsing(version=version, arcan_version=arcan_version)
+                tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
+                raise AirflowFailException(e)
+        return dependency_graph_file_name
+ 
 
     @task(pool="docker_run_pool", priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
     def create_analysis(version:dict, arcan_version:dict, dependency_graph_name: str):  
-            try:  
-                analysis_path = tasksFunctions.create_analysis(version, arcan_version, dependency_graph_name)
-            except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
-                tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
-                raise AirflowFailException(e)
-            try:
-                tasksFunctions.save_analysis(output_file_path=analysis_path, version=version, arcan_version=arcan_version)
-            except Exception as e:
-                tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
-                raise AirflowFailException(e)
+        try:  
+            analysis_path = tasksFunctions.create_analysis(version, arcan_version, dependency_graph_name)
+        except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
+            tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
+            raise AirflowFailException(e)
+        try:
+            tasksFunctions.save_analysis(output_file_path=analysis_path, version=version, arcan_version=arcan_version)
+        except Exception as e:
+            tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
+            raise AirflowFailException(e)
     
     get_dependency_graph_task = get_dependency_graph(version, arcan_version)
     create_analysis_task = create_analysis(version, arcan_version, get_dependency_graph_task)

@@ -1,11 +1,9 @@
-def version(id, id_github, date, project, last_analysis, dependency_graph):
+def version(id, id_github, date, project):
     return {
       'id': id,
       'id_github': id_github,
       'date': date,
-      'project': project,
-      'last_analysis': last_analysis,
-      'dependency_graph': dependency_graph
+      'project': project
     }
 
 def project(id, repository, language, name):
@@ -13,7 +11,7 @@ def project(id, repository, language, name):
       'id': id,
       'repository': repository,
       'language': language,
-      'name': name,
+      'name': name
     }      
 
 def repository(id, project_repository, branch, username, password):
@@ -25,21 +23,23 @@ def repository(id, project_repository, branch, username, password):
       'password': password
     }
 
-def dependency_graph(id, date_parsing, file_result, project_version):
+def dependency_graph(id, date_parsing, file_result, project_version, is_completed):
     return {
         'id': id,
         'date_parsing': date_parsing,
         'file_result': file_result,
-        'project_version': project_version
+        'project_version': project_version,
+        'is_completed': is_completed
     }
 
-def analysis(id, date_analysis, file_result, project_version, arcan_version):
+def analysis(id, date_analysis, file_result, project_version, arcan_version, is_completed):
     return {
         'id': id,
         'date_analysis': date_analysis,
         'file_result': file_result,
         'project_version': project_version,
-        'arcan_version': arcan_version
+        'arcan_version': arcan_version,
+        'is_completed': is_completed
     }
 
 def arcan_version(id, version, date_of_release):
