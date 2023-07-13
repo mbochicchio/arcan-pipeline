@@ -38,7 +38,7 @@ def execute(version: dict, arcan_version: dict):
                 dependency_graph_file_name = tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
                 tasksFunctions.save_dependency_graph(output_file_name=dependency_graph_file_name, version=version)
             except (ArcanImageNotFoundException, ArcanExecutionException, ArcanOutputNotFoundException) as e:
-                tasksFunctions.save_failed_parsing(version=version, arcan_version=arcan_version)
+                tasksFunctions.save_failed_parsing(version=version)
                 tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version)
                 raise AirflowFailException(e)
         return dependency_graph_file_name

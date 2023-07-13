@@ -121,8 +121,8 @@ def save_analysis(output_file_path:str, version:dict, arcan_version: dict, is_co
 def save_failed_analysis(version:dict, arcan_version: dict):
     save_analysis(output_file_path=None, version=version, arcan_version=arcan_version, is_completed=0)
 
-def save_failed_parsing(version:dict, arcan_version: dict):
-    save_dependency_graph(output_file_name=None, version=version, arcan_version=arcan_version, is_completed=0)
+def save_failed_parsing(version:dict):
+    save_dependency_graph(output_file_name=None, version=version, is_completed=0)
 
 def delete_version_directory(version_id: dict):
     version_path = fileManager.get_version_path(version_id)
