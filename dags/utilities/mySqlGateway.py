@@ -82,7 +82,7 @@ class MySqlGateway():
             raise SettingsException("Lista versioni vuota")
 
     def get_dependency_graph_by_version_id(self, version_id: str):
-        sql = f"SELECT file_result FROM DependencyGraph WHERE project_version={version_id} AND is_completed=True"
+        sql = f"SELECT file_result FROM DependencyGraph WHERE project_version={version_id} AND is_completed=1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return myresult[0][0]
