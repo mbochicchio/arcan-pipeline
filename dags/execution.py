@@ -24,7 +24,7 @@ def execute(version: dict, arcan_version: dict):
         try:
             tasksFunctions.create_version_directory(version)
         except (CloneRepositoryException, CheckoutRepositoryException) as e:
-            raise AirflowFailException()
+            raise AirflowFailException(e)
 
     @task(priority_weight=3, trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
     def delete_version_directory(version:dict):
