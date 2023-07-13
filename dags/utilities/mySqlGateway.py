@@ -82,7 +82,7 @@ class MySqlGateway():
             raise SettingsException("Lista versioni vuota")
 
     def get_dependency_graph_by_version_id(self, version_id: str):
-        sql = f"SELECT file_result FROM DependencyGraph WHERE project_version={version_id} AND is_completed=1"
+        sql = f"SELECT file_result FROM DependencyGraph WHERE project_version={version_id} AND is_completed=1 ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return myresult[0][0]
@@ -113,11 +113,3 @@ class MySqlGateway():
         sql = "INSERT INTO Analysis (date_analysis, file_result, project_version, arcan_version, is_completed) VALUES (%s, %s, %s, %s, %s)"
         data = (datetime.strptime(analysis['date_analysis'], "%Y-%m-%dT%H:%M:%SZ"), analysis['file_result'], analysis['project_version'], analysis['arcan_version'], analysis['is_completed'])
         self.__execute_transaction__(sql, data)
-
-    def get_dependency_graph(self, version:dict):
-        sql = f"SELECT * FROM DependencyGraph WHERE project_version={version['id']})"
-        myresult = self.__execute_query__(sql)
-        if len(myresult) > 0:
-            return model.dependency_graph(myresult[0][0], str(myresult[0][1]), myresult[0][2], myresult[0][3])
-        else:
-            return None
