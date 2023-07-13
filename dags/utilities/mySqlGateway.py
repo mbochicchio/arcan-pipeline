@@ -2,7 +2,7 @@ from airflow.providers.mysql.hooks.mysql import MySqlHook
 from typing import List, Tuple
 from datetime import datetime
 from utilities import model
-from utilities.customException import SettingsException, ProjectNotFoundException, DependencyGraphNotFoundException
+from utilities.customException import SettingsException, ProjectNotFoundException
 
 class MySqlGateway():
     def __init__(self):

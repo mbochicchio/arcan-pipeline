@@ -1,7 +1,7 @@
 from airflow.decorators import task, task_group, dag
 from pendulum import datetime
 from utilities import tasksFunctions, constants
-from utilities.customException import ArcanOutputNotFoundException, CloneRepositoryException, CheckoutRepositoryException, ArcanImageNotFoundException, ArcanExecutionException, DependencyGraphNotFoundException
+from utilities.customException import ArcanOutputNotFoundException, CloneRepositoryException, CheckoutRepositoryException, ArcanImageNotFoundException, ArcanExecutionException
 from airflow.exceptions import AirflowFailException
 
 @task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
