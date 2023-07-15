@@ -1,0 +1,12 @@
+services:
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    stop_signal: SIGINT
+    ports:
+      - "5001:${DASHBOARD_PORT}"
+    env_file:
+      - .env
+    

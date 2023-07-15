@@ -1,6 +1,7 @@
 FROM rocker/shiny-verse as base
 
 RUN R -e 'install.packages(c("dotenv", "DBI", "odbc", "RMySQL", "plotly", "thematic"))'
+RUN R -e 'install.packages(c("shinycssloaders"))'
 
 FROM base AS devenv
 RUN apt-get update && \
@@ -12,5 +13,5 @@ RUN R -e 'install.packages(c("languageserver", "httpgd"))'
 FROM base AS webapp
 WORKDIR /app
 COPY run-app.R .
-COPY dashboard .
+COPY dashboard dashboard/
 ENTRYPOINT [ "Rscript", "run-app.R" ]

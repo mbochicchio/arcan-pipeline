@@ -32,4 +32,9 @@ server <- function(input, output, session) {
         analyses_by_day() %>%
             plot_analyses_by_day()
     })
+
+    output$analysedTotalPlot <- renderPlotly({
+        analyses_status() %>% 
+            plot_analysed_total()
+    })
 }

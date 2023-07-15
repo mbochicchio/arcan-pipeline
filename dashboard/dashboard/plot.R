@@ -57,6 +57,20 @@ plot_analyses_by_status <- function(analyses_status) {
         summarise(value = sum(value, na.rm = TRUE))
 }
 
+plot_analysed_total <- function(analyses_status) {
+    analyses_status %>%
+        select(!id & !total) %>%
+        rename(Success = n_success, Failed = n_failed) %>%
+        group_by() %>%
+        summarise_if(is.numeric, sum, na.rm = TRUE) %>%
+        pivot_longer(cols = everything()) %>%
+        ggplot(aes(name, value, fill = name)) +
+        geom_col() +
+        scale_fill_manual(values = colors$colors_2) +
+        labs(x = "", y = "Num. of Analyses", fill = "",
+            title = "Number of analyses")
+}
+
 plot_analyses_by_day <- function(analyses_by_day) {
     analyses_by_day %>%
         mutate(outcome = ifelse(is_completed, "Success", "Failed")) %>%
