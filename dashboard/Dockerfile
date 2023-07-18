@@ -1,6 +1,6 @@
 FROM rocker/shiny-verse as base
 
-RUN R -e 'install.packages(c("dotenv", "DBI", "odbc", "RMySQL", "plotly", "thematic"))'
+RUN R -e 'install.packages(c("dotenv", "DBI", "odbc", "RMySQL", "plotly", "thematic", "DT"))'
 RUN R -e 'install.packages(c("shinycssloaders"))'
 
 FROM base AS devenv
