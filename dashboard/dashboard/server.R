@@ -37,4 +37,12 @@ server <- function(input, output, session) {
         analyses_status() %>% 
             plot_analysed_total()
     })
+
+    output$projectsTable <- DT::renderDT({
+        analyses_status() %>%
+            select(name, language, n_failed, n_success) %>%
+            arrange(desc(n_failed + n_success)) %>%
+            rename(Name = name, Language = language,
+                Failed = n_failed, Success = n_success)
+    }, filter = "top")
 }

@@ -19,5 +19,12 @@ ui <- fluidPage(
         column(6,
             withSpinner(plotlyOutput("analysedTotalPlot"))
         )
+    ),
+    hr(),
+    fluidRow(
+        column(12,
+            h3("Projects"),
+            DT::DTOutput("projectsTable")
+        )
     )
 )
