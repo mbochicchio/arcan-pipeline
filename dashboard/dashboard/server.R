@@ -41,8 +41,10 @@ server <- function(input, output, session) {
     output$projectsTable <- DT::renderDT({
         analyses_status() %>%
             select(name, language, n_failed, n_success) %>%
+            mutate(Link = paste0("<a target='_blank' href='https://github.com/", name, "'>View</a>")) %>%
             arrange(desc(n_failed + n_success)) %>%
             rename(Name = name, Language = language,
-                Failed = n_failed, Success = n_success)
+                Failed = n_failed, Success = n_success) %>%
+            DT::datatable(escape = FALSE)
     }, filter = "top")
 }
