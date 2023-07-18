@@ -45,6 +45,6 @@ server <- function(input, output, session) {
             arrange(desc(n_failed + n_success)) %>%
             rename(Name = name, Language = language,
                 Failed = n_failed, Success = n_success) %>%
-            DT::datatable(escape = FALSE)
-    }, filter = "top")
+            DT::datatable(escape = FALSE, filter = "top")
+    })
 }
