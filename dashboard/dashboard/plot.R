@@ -83,3 +83,25 @@ plot_analyses_by_day <- function(analyses_by_day) {
         ) +
         theme(legend.position = "top")
 }
+
+plot_failure_rate_by_language <- function(analyses_status) {
+    rates <- analyses_status %>%
+        group_by(language) %>%
+        summarise(n_failed = sum(n_failed),
+            n_success = sum(n_success))
+    rates <- rates %>%
+        bind_rows(tibble(
+            language = "TOTAL", n_failed = sum(rates$n_failed),
+            n_success = sum(rates$n_success)))
+    rates %>%
+        mutate(total = n_failed + n_success) %>%
+        mutate(Success = n_success / total * 100) %>%
+        mutate(Failed = n_failed / total * 100)
+        pivot_longer(cols = c("Success", "Failed")) %>%
+        ggplot(aes(language, value, fill = name)) +
+        geom_col() +
+        scale_fill_manual(values = colors$colors_2) +
+        labs(x = "", y = "Percentage (Rate)", fill = "",
+            title = "Success and failure rates by programming language") +
+        theme(legend.position = "top")
+}
