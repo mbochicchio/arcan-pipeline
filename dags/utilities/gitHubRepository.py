@@ -3,6 +3,7 @@ from utilities import model
 from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiException, GitRestApiValidationFailedException
 import requests
 import time
+import datetime
 from airflow.models import Variable
 
 ENDPOINT = "https://api.github.com"
@@ -21,7 +22,7 @@ def get_version_list(project: dict, last_version_analyzed: dict):
             for item in response_release_list:
                 item_parsed = model.version(None, item['tag_name'], item['published_at'], project['id'])
                 version_list.append(item_parsed)
-                if last_version_analyzed and (last_version_analyzed['id_github'] == str(item_parsed['id_github'])):
+                if last_version_analyzed and (datetime.datetime.strptime(item_parsed['date'], "%Y-%m-%dT%H:%M:%SZ") <= datetime.datetime.strptime(last_version_analyzed['date'], "%Y-%m-%d %H:%M:%S")) : 
                     complete = True
                     break
             if len(response_release_list) >= PER_PAGE and page_number < 10: #github impone di ottenere massimo 1000 release

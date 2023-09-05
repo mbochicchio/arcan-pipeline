@@ -44,7 +44,7 @@ def get_new_version_list(project:dict, last_version_analyzed:dict):
         if (last_commit and ((not last_version_analyzed) or ((datetime.datetime.strptime(last_commit['date'], "%Y-%m-%dT%H:%M:%SZ") - datetime.datetime.strptime(last_version_analyzed['date'], "%Y-%m-%d %H:%M:%S")).days > 30 ))):
             return [last_commit]
     else:
-        if last_version_analyzed and (last_version_analyzed['id_github'] == version_list[number_of_version-1]['id_github']):
+        if last_version_analyzed and (datetime.datetime.strptime(version_list[number_of_version-1]['date'], "%Y-%m-%dT%H:%M:%SZ") <= datetime.datetime.strptime(last_version_analyzed['date'], "%Y-%m-%d %H:%M:%S")):
             version_list.pop()
             number_of_version -= 1
         if (number_of_version > 0):
