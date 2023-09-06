@@ -5,12 +5,9 @@ class ProjectNotFoundException(Exception):
     pass
 
 class ArcanOutputNotFoundException(Exception):
-    pass
+    status="EMPTY_DEPENDENCY_GRAPH"
 
 class GitRestApiException(Exception):
-    pass
-
-class ArcanException(Exception):
     pass
 
 class MakeDirException(Exception):
@@ -20,10 +17,10 @@ class DeleteDirException(Exception):
     pass
 
 class CloneRepositoryException(Exception):
-    pass
+    status="CANNOT_CLONE_REPOSITORY"
 
 class CheckoutRepositoryException(Exception):
-    pass
+    status="CANNOT_CHECKOUT_BRANCH"
 
 class GitRestApiProjectNotFoundException(GitRestApiException):
     pass
@@ -41,5 +38,7 @@ class ArcanImageNotFoundException(Exception):
     pass
 
 class ArcanExecutionException(Exception):
-    pass
+    status="ARCAN_INTERNAL_ERROR"
 
+class MaximumExecutionTimeExeededException(Exception):
+    status="MAXIMUM_EXECUTION_TIME_EXCEEDED"

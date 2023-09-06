@@ -97,32 +97,32 @@ def create_analysis(version:dict, arcan_version:dict, dependency_graph_name:str)
     output_file_path = fileManager.get_output_file_path(output_type="analysis", version_id=version['id'])
     return output_file_path
 
-def save_dependency_graph(output_file_name:str, version: dict, is_completed=1):
+def save_dependency_graph(output_file_name:str, version: dict, is_completed=1, status="Successful"):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
     if is_completed:
         output_file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id']) + "/" +  output_file_name
         file = fileManager.get_blob_from_file(output_file_path)
-        dependency_graph = model.dependency_graph(None, now, file, version['id'], is_completed)
+        dependency_graph = model.dependency_graph(None, now, file, version['id'], is_completed, status)
     else:
-        dependency_graph = model.dependency_graph(None, now, None, version['id'], is_completed)
+        dependency_graph = model.dependency_graph(None, now, None, version['id'], is_completed, status)
     gw = MySqlGateway()
     gw.add_dependency_graph(dependency_graph)
 
-def save_analysis(output_file_path:str, version:dict, arcan_version: dict, is_completed=1):
+def save_analysis(output_file_path:str, version:dict, arcan_version: dict, is_completed=1, status="Successful"):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
     if is_completed:
         file = fileManager.get_blob_from_file(output_file_path)
-        analysis = model.analysis(None, now, file, version['id'], arcan_version['id'], is_completed)
+        analysis = model.analysis(None, now, file, version['id'], arcan_version['id'], is_completed, status)
     else:
-        analysis = model.analysis(None, now, None, version['id'], arcan_version['id'], is_completed)
+        analysis = model.analysis(None, now, None, version['id'], arcan_version['id'], is_completed, status)
     gw = MySqlGateway()
     gw.add_analysis(analysis)
 
-def save_failed_analysis(version:dict, arcan_version: dict):
-    save_analysis(output_file_path=None, version=version, arcan_version=arcan_version, is_completed=0)
+def save_failed_analysis(version:dict, arcan_version: dict, status: str):
+    save_analysis(output_file_path=None, version=version, arcan_version=arcan_version, is_completed=0, status=status)
 
-def save_failed_parsing(version:dict):
-    save_dependency_graph(output_file_name=None, version=version, is_completed=0)
+def save_failed_parsing(version:dict, status: str):
+    save_dependency_graph(output_file_name=None, version=version, is_completed=0, status=status)
 
 def delete_version_directory(version_id: dict):
     version_path = fileManager.get_version_path(version_id)

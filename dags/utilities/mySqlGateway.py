@@ -82,7 +82,7 @@ class MySqlGateway():
             raise SettingsException("Lista versioni vuota")
 
     def get_dependency_graph_by_version_id(self, version_id: str):
-        sql = f"SELECT file_result FROM DependencyGraph WHERE project_version={version_id} AND is_completed=1 ORDER BY id DESC LIMIT 0, 1"
+        sql = f"SELECT file_result FROM DependencyGraph WHERE project_version={version_id} AND status='Successful' ORDER BY id DESC LIMIT 0, 1"
         myresult = self.__execute_query__(sql)
         if len(myresult) > 0:
             return myresult[0][0]
@@ -105,11 +105,11 @@ class MySqlGateway():
         self.__execute_transaction__(sql, data)
 
     def add_dependency_graph(self, dependency_graph: dict):
-        sql = "INSERT INTO DependencyGraph (date_parsing, file_result, project_version, is_completed) VALUES (%s, %s, %s, %s)"
-        data = (datetime.strptime(dependency_graph['date_parsing'], "%Y-%m-%dT%H:%M:%SZ"), dependency_graph['file_result'], dependency_graph['project_version'], dependency_graph['is_completed'])
+        sql = "INSERT INTO DependencyGraph (date_parsing, file_result, project_version, is_completed, status) VALUES (%s, %s, %s, %s, %s)"
+        data = (datetime.strptime(dependency_graph['date_parsing'], "%Y-%m-%dT%H:%M:%SZ"), dependency_graph['file_result'], dependency_graph['project_version'], dependency_graph['is_completed'], dependency_graph['status'])
         self.__execute_transaction__(sql, data)
 
     def add_analysis(self, analysis:dict):
-        sql = "INSERT INTO Analysis (date_analysis, file_result, project_version, arcan_version, is_completed) VALUES (%s, %s, %s, %s, %s)"
-        data = (datetime.strptime(analysis['date_analysis'], "%Y-%m-%dT%H:%M:%SZ"), analysis['file_result'], analysis['project_version'], analysis['arcan_version'], analysis['is_completed'])
+        sql = "INSERT INTO Analysis (date_analysis, file_result, project_version, arcan_version, is_completed, status) VALUES (%s, %s, %s, %s, %s, %s)"
+        data = (datetime.strptime(analysis['date_analysis'], "%Y-%m-%dT%H:%M:%SZ"), analysis['file_result'], analysis['project_version'], analysis['arcan_version'], analysis['is_completed'], analysis['status'])
         self.__execute_transaction__(sql, data)
