@@ -15,7 +15,7 @@ cursor = conn.cursor()
 
 # Definisci il nome della tabella di origine e della tabella di destinazione
 tabella_origine = "DependencyGraph"
-tabella_destinazione = "FileDependencyGraph"
+tabella_destinazione = "DependencyGraphFile"
 
 # Esegui una query per selezionare le righe dalla tabella di origine in blocchi
 batch_size = 1  # Definisci il numero di righe per batch
@@ -34,8 +34,8 @@ while True:
         # Modifica le colonne in base alle tue esigenze
         # Ad esempio, supponiamo che tu voglia selezionare solo alcune colonne
         # e che ci siano differenze nei nomi delle colonne tra le tabelle
-        id_versione = riga["id"]
-        file = riga["file_result"]
+        id_versione = riga[0]
+        file = riga[1]
 
         # Esegui compressione del file
         if file:
@@ -43,16 +43,15 @@ while True:
         else:
             file_compresso=None
 
-        print(f'file: {file}')
-        print(f'file_compresso: {file_compresso}' )
         # Esegui l'operazione di inserimento nella tabella di destinazione
-        #insert_query = f"INSERT INTO {tabella_destinazione} (colonna1, colonna2) VALUES (%s, %s);"
-        #cursor.execute(insert_query, (id_versione, file_compresso))
+        insert_query = f"INSERT INTO {tabella_destinazione} (dependency_graph_id, file_result) VALUES (%s, %s);"
+        cursor.execute(insert_query, (id_versione, file_compresso))
 
     # Esegui il commit della transazione per rendere permanenti le modifiche per questo batch
-    #conn.commit()
+    conn.commit()
     
-    #offset += batch_size
+    offset += batch_size
+    break
 
 # Chiudi la connessione al database
 cursor.close()
