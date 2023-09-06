@@ -41,12 +41,9 @@ while True:
         # Esegui compressione del file
         if file:
             file_compresso = gzip.compress(file, compresslevel=9, mtime=None)
-        else:
-            file_compresso=None
-
-        # Esegui l'operazione di inserimento nella tabella di destinazione
-        insert_query = f"INSERT INTO {tabella_destinazione} (analysis_id, file_result) VALUES (%s, %s);"
-        cursor.execute(insert_query, (id_versione, file_compresso))
+            # Esegui l'operazione di inserimento nella tabella di destinazione
+            insert_query = f"INSERT INTO {tabella_destinazione} (analysis_id, file_result) VALUES (%s, %s);"
+            cursor.execute(insert_query, (id_versione, file_compresso))
 
     # Esegui il commit della transazione per rendere permanenti le modifiche per questo batch
     conn.commit()
