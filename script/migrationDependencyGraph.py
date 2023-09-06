@@ -44,6 +44,9 @@ while True:
             # Esegui l'operazione di inserimento nella tabella di destinazione
             insert_query = f"INSERT INTO {tabella_destinazione} (dependency_graph_id, file_result) VALUES (%s, %s);"
             cursor.execute(insert_query, (id_versione, file_compresso))
+            
+            update_query = f"UPDATE {tabella_origine} SET file_result=NULL WHERE id={id_versione}"
+            cursor.execute(update_query)
 
     # Esegui il commit della transazione per rendere permanenti le modifiche per questo batch
     conn.commit()
