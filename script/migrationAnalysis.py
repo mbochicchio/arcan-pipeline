@@ -18,10 +18,11 @@ tabella_origine = "Analysis"
 tabella_destinazione = "AnalysisResult"
 
 # Esegui una query per selezionare le righe dalla tabella di origine in blocchi
-batch_size = 2  # Definisci il numero di righe per batch
+batch_size = 50  # Definisci il numero di righe per batch
 offset = 0
 
 while True:
+    print(f'done: {offset}')
     select_query = f"SELECT id, file_result FROM {tabella_origine} LIMIT {batch_size} OFFSET {offset};"
     cursor.execute(select_query)
     righe = cursor.fetchall()
@@ -51,7 +52,6 @@ while True:
     conn.commit()
     
     offset += batch_size
-    break
 
 # Chiudi la connessione al database
 cursor.close()
