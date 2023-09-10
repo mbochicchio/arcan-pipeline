@@ -23,25 +23,23 @@ def repository(id, project_repository, branch, username, password):
       'password': password
     }
 
-def dependency_graph(id, date_parsing, file_result, project_version, is_completed, status):
+def parsing(id, date_parsing, project_version, status, file_result):
     return {
         'id': id,
         'date_parsing': date_parsing,
-        'file_result': file_result,
         'project_version': project_version,
-        'is_completed': is_completed,
-        'status': status
+        'status': status,
+        'file_result': file_result
     }
 
-def analysis(id, date_analysis, file_result, project_version, arcan_version, is_completed, status):
+def analysis(id, date_analysis, project_version, arcan_version, status, file_result):
     return {
         'id': id,
         'date_analysis': date_analysis,
-        'file_result': file_result,
         'project_version': project_version,
         'arcan_version': arcan_version,
-        'is_completed': is_completed,
-        'status': status
+        'status': status,
+        'file_result': file_result
     }
 
 def arcan_version(id, version, date_of_release):

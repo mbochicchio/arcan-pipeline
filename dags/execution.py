@@ -20,43 +20,50 @@ def get_version_range():
 def execute(version: dict, arcan_version: dict):
 
     @task(priority_weight=1, retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
-    def create_version_directory(version:dict, arcan_version: dict):
+    def create_version_directory(version:dict, project:dict, arcan_version: dict):
         try:
-            tasksFunctions.create_version_directory(version)
+            tasksFunctions.create_version_directory(version, project)
         except (CloneRepositoryException, CheckoutRepositoryException) as e:
-            tasksFunctions.save_failed_parsing(version=version, status=e.status)
-            tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version, status=e.status)    
+            tasksFunctions.save_parsing(version=version, status=e.status)
+            tasksFunctions.save_analysis(version=version, arcan_version=arcan_version, status=e.status)    
             raise AirflowFailException(e)
+
+    @task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
+    def get_project_of_version(project_id):
+        return tasksFunctions.get_project_by_id(project_id)
 
     @task(priority_weight=3, trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
     def delete_version_directory(version:dict):
         tasksFunctions.delete_version_directory(version['id'])
 
     @task(pool="docker_run_pool", priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
-    def get_dependency_graph(version: dict, arcan_version: dict):           
-        dependency_graph_file_name = tasksFunctions.get_dependency_graph(version=version)
-        if not dependency_graph_file_name:
+    def get_dependency_graph(version: dict, project:dict, arcan_version: dict):           
+        dependency_graph_file = tasksFunctions.get_dependency_graph(version=version)
+        if not dependency_graph_file:
             try:
-                dependency_graph_file_name = tasksFunctions.create_dependency_graph(version=version, arcan_version=arcan_version)
-                tasksFunctions.save_dependency_graph(output_file_name=dependency_graph_file_name, version=version)
+                dependency_graph_file = tasksFunctions.create_dependency_graph(version=version, project=project, arcan_version=arcan_version)
+                dependency_graph_id = tasksFunctions.save_dependency_graph(output_file_path=dependency_graph_file)
+                tasksFunctions.save_parsing(version=version, dependency_graph=dependency_graph_id)
             except (ArcanExecutionException, ArcanOutputNotFoundException, MaximumExecutionTimeExeededException) as e:
-                tasksFunctions.save_failed_parsing(version=version, status=e.status)
-                tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version, status=e.status)
+                tasksFunctions.save_parsing(version=version, status=e.status)
+                tasksFunctions.save_analysis(version=version, arcan_version=arcan_version, status=e.status)
                 raise AirflowFailException(e)
-        return dependency_graph_file_name
+        return dependency_graph_file
  
     @task(pool="docker_run_pool", priority_weight=2, retries=constants.DOCKER_RETRIES, retry_delay=constants.DOCKER_RETRY_DELAY)
-    def create_analysis(version:dict, arcan_version:dict, dependency_graph_name: str):  
-        try:  
-            analysis_path = tasksFunctions.create_analysis(version, arcan_version, dependency_graph_name)
-            tasksFunctions.save_analysis(output_file_path=analysis_path, version=version, arcan_version=arcan_version)
+    def create_analysis(version:dict, project:dict, arcan_version:dict, dependency_graph_local_path: str):  
+        try: 
+            analysis_result_file = tasksFunctions.create_analysis(version, project, arcan_version, dependency_graph_local_path)
+            analysis_result_id = tasksFunctions.save_analysis_result(output_file_path=analysis_result_file)
+            tasksFunctions.save_analysis(version=version, arcan_version=arcan_version, analysis_result=analysis_result_id)
         except (ArcanExecutionException, ArcanOutputNotFoundException, MaximumExecutionTimeExeededException) as e:
-            tasksFunctions.save_failed_analysis(version=version, arcan_version=arcan_version, status=e.status)
+            tasksFunctions.save_analysis(version=version, arcan_version=arcan_version, status=e.status)
             raise AirflowFailException(e)
     
-    get_dependency_graph_task = get_dependency_graph(version, arcan_version)
-    create_analysis_task = create_analysis(version, arcan_version, get_dependency_graph_task)
-    create_version_directory(version, arcan_version) >> get_dependency_graph_task >> create_analysis_task >> delete_version_directory(version)
+    get_project_task = get_project_of_version(version['project'])
+    get_dependency_graph_task = get_dependency_graph(version, get_project_task, arcan_version)
+    create_analysis_task = create_analysis(version, get_project_task, arcan_version, get_dependency_graph_task)
+    get_project_task >> create_version_directory(version, get_project_task, arcan_version) >> get_dependency_graph_task >> create_analysis_task >> delete_version_directory(version)
 
 
 @dag(

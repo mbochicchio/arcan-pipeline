@@ -64,70 +64,66 @@ def get_version_list(version_range: int, arcan_version:dict):
     gw = MySqlGateway()
     return gw.get_versions_list(limit=version_range, arcan_version_id=arcan_version['id'])
     
-def create_version_directory(version: dict):
-    gw = MySqlGateway()
-    project = gw.get_project_by_id(version['project'])
-    project_path = fileManager.get_version_path(version['id'])
-    fileManager.create_dir(project_path)
-    fileManager.clone_repository(project['name'], project_path)
-    fileManager.checkout_repository(version=version['id_github'], project_dir=project_path)
+def create_version_directory(version: dict, project: dict):
+    version_directory = fileManager.get_version_directory(version['id'])
+    fileManager.create_dir(version_directory)
+    fileManager.clone_repository(project['name'], version_directory)
+    fileManager.checkout_repository(version=version['id_github'], version_directory=version_directory)
 
-def create_dependency_graph(version:dict, arcan_version:dict):
+def get_project_by_id(project_id: int):
     gw = MySqlGateway()
-    project = gw.get_project_by_id(version['project'])
+    return gw.get_project_by_id(project_id)
+
+def create_dependency_graph(version:dict, project:dict, arcan_version:dict):
     dockerRunner.execute_parsing(version_id=version['id'], project_language=project['language'], arcan_image=arcan_version['version'])
-    output_file_name = fileManager.get_output_file_name(output_type="dependency-graph", version_id=version['id'])
-    return output_file_name
+    output_file = fileManager.get_output_file_path(output_type="dependency-graph", version_id=version['id'])
+    return output_file
 
 def get_dependency_graph(version: dict):
     gw = MySqlGateway()
     dependency_graph_blob = gw.get_dependency_graph_by_version_id(version['id'])
     if dependency_graph_blob:
-        file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id'])
-        fileManager.create_dir(path=file_path)
-        output_file_name = fileManager.write_file(data=dependency_graph_blob, path=file_path)
-        return output_file_name
+        output_directory = fileManager.get_output_directory(output_type="dependency-graph", version_id=version['id'])
+        fileManager.create_dir(path=output_directory)
+        output_file = fileManager.write_file(data=dependency_graph_blob, path=output_directory)
+        return output_file
     else:
         return None
 
-def create_analysis(version:dict, arcan_version:dict, dependency_graph_name:str):
+def save_dependency_graph(output_file_path: str):
+    blob = fileManager.get_blob_from_file(output_file_path)
     gw = MySqlGateway()
-    project = gw.get_project_by_id(version['project'])
-    dockerRunner.execute_analysis(version=version, project_language=project['language'], arcan_image=arcan_version['version'], dependency_graph_name=dependency_graph_name)
+    id_dependency_graph = gw.add_dependency_graph(blob)
+    return id_dependency_graph
+
+def save_parsing(version: dict, status="Successful", dependency_graph=None):
+    now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
+    parsing = model.parsing(None, now, version['id'], status, dependency_graph)
+    gw = MySqlGateway()
+    gw.add_parsing(parsing)
+
+def create_analysis(version:dict, project:dict, arcan_version:dict, dependency_graph_local_path:str):
+    dependency_graph_container_path = fileManager.get_dependency_graph_container_path(dependency_graph_local_path)
+    dockerRunner.execute_analysis(version=version, project_language=project['language'], arcan_image=arcan_version['version'], dependency_graph=dependency_graph_container_path)
     output_file_path = fileManager.get_output_file_path(output_type="analysis", version_id=version['id'])
     return output_file_path
 
-def save_dependency_graph(output_file_name:str, version: dict, is_completed=1, status="Successful"):
-    now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
-    if is_completed:
-        output_file_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version['id']) + "/" +  output_file_name
-        file = fileManager.get_blob_from_file(output_file_path)
-        dependency_graph = model.dependency_graph(None, now, file, version['id'], is_completed, status)
-    else:
-        dependency_graph = model.dependency_graph(None, now, None, version['id'], is_completed, status)
+def save_analysis_result(output_file_path: str):
+    blob = fileManager.get_blob_from_file(output_file_path)
     gw = MySqlGateway()
-    gw.add_dependency_graph(dependency_graph)
+    id_analysis_result = gw.add_analysis_result(blob)
+    return id_analysis_result
 
-def save_analysis(output_file_path:str, version:dict, arcan_version: dict, is_completed=1, status="Successful"):
+def save_analysis(version: dict, arcan_version: dict, status="Successful", analysis_result=None):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
-    if is_completed:
-        file = fileManager.get_blob_from_file(output_file_path)
-        analysis = model.analysis(None, now, file, version['id'], arcan_version['id'], is_completed, status)
-    else:
-        analysis = model.analysis(None, now, None, version['id'], arcan_version['id'], is_completed, status)
+    analysis = model.analysis(None, now, version['id'], arcan_version['id'], status, analysis_result)
     gw = MySqlGateway()
     gw.add_analysis(analysis)
 
-def save_failed_analysis(version:dict, arcan_version: dict, status: str):
-    save_analysis(output_file_path=None, version=version, arcan_version=arcan_version, is_completed=0, status=status)
-
-def save_failed_parsing(version:dict, status: str):
-    save_dependency_graph(output_file_name=None, version=version, is_completed=0, status=status)
-
 def delete_version_directory(version_id: dict):
-    version_path = fileManager.get_version_path(version_id)
-    output_parsing_path = fileManager.get_output_path(output_type="dependency-graph", version_id=version_id)
-    output_analysis_path = fileManager.get_output_path(output_type="analysis", version_id=version_id)
+    version_path = fileManager.get_version_directory(version_id)
+    output_parsing_path = fileManager.get_output_directory(output_type="dependency-graph", version_id=version_id)
+    output_analysis_path = fileManager.get_output_directory(output_type="analysis", version_id=version_id)
     fileManager.delete_dir(path=version_path)
     fileManager.delete_dir(path=output_parsing_path)
     fileManager.delete_dir(path=output_analysis_path)  
