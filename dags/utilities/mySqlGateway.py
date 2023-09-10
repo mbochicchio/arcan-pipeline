@@ -117,12 +117,12 @@ class MySqlGateway():
 
     def add_dependency_graph(self, blob):
         sql = "INSERT INTO DependencyGraph (file_result) VALUES (%s)"
-        data = (blob)
+        data = (blob, )
         dependency_graph_id = self.__execute_transaction__(sql, data)
         return dependency_graph_id
 
     def add_analysis_result(self, blob):
         sql = "INSERT INTO AnalysisResult (file_result) VALUES (%s)"
-        data = (blob)
+        data = (blob, )
         analysis_result_id = self.__execute_transaction__(sql, data)
         return analysis_result_id
