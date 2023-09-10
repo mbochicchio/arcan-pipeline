@@ -29,7 +29,8 @@ def execute(version: dict, arcan_version: dict):
             raise AirflowFailException(e)
 
     @task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
-    def get_project_of_version(project_id):
+    def get_project_of_version(version: dict):
+        project_id = version['project']
         return tasksFunctions.get_project_by_id(project_id)
 
     @task(priority_weight=3, trigger_rule='all_done', retries=constants.FILE_MANAGER_RETRIES, retry_delay=constants.FILE_MANAGER_RETRY_DELAY)
@@ -60,7 +61,7 @@ def execute(version: dict, arcan_version: dict):
             tasksFunctions.save_analysis(version=version, arcan_version=arcan_version, status=e.status)
             raise AirflowFailException(e)
     
-    get_project_task = get_project_of_version(version['project'])
+    get_project_task = get_project_of_version(version)
     get_dependency_graph_task = get_dependency_graph(version, get_project_task, arcan_version)
     create_analysis_task = create_analysis(version, get_project_task, arcan_version, get_dependency_graph_task)
     get_project_task >> create_version_directory(version, get_project_task, arcan_version) >> get_dependency_graph_task >> create_analysis_task >> delete_version_directory(version)
