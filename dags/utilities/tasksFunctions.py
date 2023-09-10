@@ -96,7 +96,7 @@ def save_dependency_graph(output_file_path: str):
     id_dependency_graph = gw.add_dependency_graph(blob)
     return id_dependency_graph
 
-def save_parsing(version: dict, status="Successful", dependency_graph=None):
+def save_parsing(version: dict, status="SUCCESSFUL", dependency_graph=None):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
     parsing = model.parsing(None, now, version['id'], status, dependency_graph)
     gw = MySqlGateway()
@@ -114,7 +114,7 @@ def save_analysis_result(output_file_path: str):
     id_analysis_result = gw.add_analysis_result(blob)
     return id_analysis_result
 
-def save_analysis(version: dict, arcan_version: dict, status="Successful", analysis_result=None):
+def save_analysis(version: dict, arcan_version: dict, status="SUCCESSFUL", analysis_result=None):
     now = datetime.datetime.now(pytz.timezone('Europe/Rome')).strftime("%Y-%m-%dT%H:%M:%SZ")
     analysis = model.analysis(None, now, version['id'], arcan_version['id'], status, analysis_result)
     gw = MySqlGateway()
