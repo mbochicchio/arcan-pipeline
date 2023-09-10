@@ -72,7 +72,7 @@ class MySqlGateway():
             raise SettingsException("Versione di Arcan non trovata")
 
     def get_versions_list(self, arcan_version_id: str, limit: int):
-        sql = f"SELECT T.id, T.id_github, T.date, T.id_project FROM (SELECT DISTINCT * FROM Version AS V WHERE NOT EXISTS ( SELECT * FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id}) LIMIT {limit}) AS T"
+        sql = f"SELECT V.id, V.id_github, V.date, V.id_project FROM Version AS V WHERE V.id NOT IN ( SELECT A2.project_version FROM Analysis as A2 WHERE A2.project_version = V.id AND A2.arcan_version = {arcan_version_id}) LIMIT {limit}"
         myresult = self.__execute_query__(sql)
         version_list = []
         if len(myresult) > 0:
