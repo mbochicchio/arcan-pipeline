@@ -6,6 +6,7 @@ library(tidyr)
 library(dplyr)
 library(igraph)
 library(coro)
+library(R.utils)
 
 get_connection_from_env <- function(file = ".env") {
     dotenv::load_dot_env(file)
@@ -22,23 +23,34 @@ get_connection_from_env <- function(file = ".env") {
 
 fetch_analyses_page <- function(conn, offset = 0, page_size = 5) {
     q_page <- '
-        SELECT a.id, a.date_analysis, a.file_result, p.name, p.language,
+        SELECT a.id, a.date_analysis, a.file_result as file_result_id, p.name, p.language,
             v.id_github as version, v.date as version_date
         FROM Analysis as a 
             JOIN Version as v on v.id = a.project_version 
             JOIN Project as p on p.id = id_project 
-        WHERE status = "SUCCESSFUL"
+        WHERE status = \'SUCCESSFUL\'
         ORDER BY a.date_analysis, a.id ASC'
     q_page <- paste0(q_page, " LIMIT ", page_size, " OFFSET ", offset)
     page <- dbGetQuery(conn, q_page) %>% as_tibble()
 
-    q_data <- "SELECT id, file_result FROM AnalysisResult WHERE id in "
-    q_data <- paste0(q_data, "(", paste0(page$file_result, collapse = ","), ")")
+    q_data <- "SELECT id, HEX(file_result) FROM AnalysisResult WHERE id in "
+    q_data <- paste0(q_data, "(", paste0(page$file_result_id, collapse = ","), ")")
 
     graphs <- dbGetQuery(conn, q_data) %>% as_tibble()
     graphs %>%
-        left_join(page, by = "id") %>%
+        rename(file_result = `HEX(file_result)`) %>%
+        left_join(page %>% select(!id), by = c("id" = "file_result_id")) %>%
         select(!file_result, file_result)
+}
+
+hex_to_raw <- function(x) {
+  chars <- strsplit(x, "")[[1]]
+  as.raw(strtoi(paste0(chars[c(TRUE, FALSE)], chars[c(FALSE, TRUE)]), base=16L))
+}
+write_hex_to_file <- function(file_name, hex_data) {
+    gz <- file(file_name, "wb")
+    writeBin(hex_to_raw(hex_data), gz, useBytes = TRUE)
+    close(gz)
 }
 
 new_data_generator <-
@@ -54,12 +66,14 @@ new_data_generator <-
             break
         }
         i <- i + n_page
-        tmp_file <- "/tmp/graph.graphml"
+        tmp_file <- "/tmp/graph.graphml.gz"
+        graph_file <- "/tmp/graph.graphml"
         for (index in seq_len(n_page)){
             analysis <- page_data[index, ]
 
-            writeLines(analysis$file_result, tmp_file)
-            G <- read_graph(tmp_file, "graphml")
+            write_hex_to_file(tmp_file, analysis$file_result)
+            gunzip(tmp_file, remove = TRUE, overwrite = TRUE)
+            G <- read_graph(graph_file, "graphml")
             V(G)$qualified_name <- V(G)$name
             V(G)$name <- V(G)$id
             df_nodes <- as_data_frame(G, what = "vertices") %>% as_tibble()
@@ -139,8 +153,8 @@ save_to_sqlite <- function(db_file_name, data_generator) {
 }
 
 conn <- get_connection_from_env(".env")
-fetch_data <- new_data_generator(conn, max_projects = 50)
-save_to_sqlite("test-projects.sqlite", fetch_data)
+fetch_data <- new_data_generator(conn, max_projects = 1000)
+save_to_sqlite("test-projects-1000.sqlite", fetch_data)
 dbDisconnect(conn)
 
 # writeLines(graphs$file_result[1], "/tmp/graph.graphml")
