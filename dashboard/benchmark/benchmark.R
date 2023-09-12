@@ -22,18 +22,18 @@ get_connection_from_env <- function(file = ".env") {
 
 fetch_analyses_page <- function(conn, offset = 0, page_size = 5) {
     q_page <- '
-        SELECT a.id, a.date_analysis, p.name, p.language,
+        SELECT a.id, a.date_analysis, a.file_result, p.name, p.language,
             v.id_github as version, v.date as version_date
         FROM Analysis as a 
             JOIN Version as v on v.id = a.project_version 
             JOIN Project as p on p.id = id_project 
-        WHERE is_completed = 1
+        WHERE status = "SUCCESSFUL"
         ORDER BY a.date_analysis, a.id ASC'
     q_page <- paste0(q_page, " LIMIT ", page_size, " OFFSET ", offset)
     page <- dbGetQuery(conn, q_page) %>% as_tibble()
 
-    q_data <- "SELECT id, file_result FROM Analysis WHERE id in "
-    q_data <- paste0(q_data, "(", paste0(page$id, collapse = ","), ")")
+    q_data <- "SELECT id, file_result FROM AnalysisResult WHERE id in "
+    q_data <- paste0(q_data, "(", paste0(page$file_result, collapse = ","), ")")
 
     graphs <- dbGetQuery(conn, q_data) %>% as_tibble()
     graphs %>%
