@@ -2,7 +2,7 @@ from pendulum import datetime
 from airflow.decorators import dag, task
 from utilities import tasksFunctions, constants
 from airflow.exceptions import AirflowFailException
-from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiValidationFailedException
+from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiValidationFailedException, GitRestApiForbiddenException
 
 @task(retries=constants.SETTINGS_RETRIES, retry_delay=constants.SETTINGS_RETRY_DELAY)
 def get_project_list(project_range: dict):
@@ -22,7 +22,7 @@ def get_new_version_list(arg: dict):
     last_version_analyzed = arg['last_version_analyzed']
     try:
         return tasksFunctions.get_new_version_list(project=project, last_version_analyzed=last_version_analyzed)
-    except (GitRestApiProjectNotFoundException, GitRestApiValidationFailedException) as e:
+    except (GitRestApiProjectNotFoundException, GitRestApiValidationFailedException, GitRestApiForbiddenException) as e:
         raise AirflowFailException(e)
 
 @task(trigger_rule='all_done', retries=constants.MYSQL_RETRIES, retry_delay= constants.MYSQL_RETRY_DELAY)

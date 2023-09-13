@@ -1,6 +1,6 @@
 import json
 from utilities import model
-from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiException, GitRestApiValidationFailedException
+from utilities.customException import GitRestApiProjectNotFoundException, GitRestApiException, GitRestApiValidationFailedException, GitRestApiForbiddenException
 import requests
 import time
 import datetime
@@ -30,7 +30,10 @@ def get_version_list(project: dict, last_version_analyzed: dict):
             else:
                 complete = True
         elif response.status_code == 403:
-            wait_reset_time(float(response.headers['x-ratelimit-reset']))
+            if(int(response.headers['x-ratelimit-remaining']) == 0):
+                wait_reset_time(float(response.headers['x-ratelimit-reset']))
+            else:
+                raise GitRestApiForbiddenException(f'API response: {response.status_code} with reason: {response.reason}')
         elif response.status_code == 404:
             raise GitRestApiProjectNotFoundException("The GitHub repository doesn't exist")
         else:

@@ -10,6 +10,9 @@ class ArcanOutputNotFoundException(Exception):
 class GitRestApiException(Exception):
     pass
 
+class GitRestApiForbiddenException(GitRestApiException):
+    pass
+
 class MakeDirException(Exception):
     pass
 
