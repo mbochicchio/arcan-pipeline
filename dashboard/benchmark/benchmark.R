@@ -8,8 +8,7 @@ library(igraph)
 library(coro)
 library(R.utils)
 
-get_connection_from_env <- function(file = ".env") {
-    dotenv::load_dot_env(file)
+get_connection_from_env <- function() {
     conn <- dbConnect(
         MySQL(),
         dbname = Sys.getenv("DATABASE_DB"),
@@ -152,9 +151,18 @@ save_to_sqlite <- function(db_file_name, data_generator) {
     dbDisconnect(mydb)
 }
 
-conn <- get_connection_from_env(".env")
-fetch_data <- new_data_generator(conn, max_projects = 1000)
-save_to_sqlite("test-projects-1000.sqlite", fetch_data)
-dbDisconnect(conn)
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) < 2) {
+    stop("usage: <output_sqlite> <max_versions>")
+}
+output_file <- args[1]
+max_versions <- as.numeric(args[2])
+conn <- get_connection_from_env()
+tryCatch({
+    fetch_data <- new_data_generator(conn, max_projects = max_versions)
+    save_to_sqlite(output_file, fetch_data)
+}, finally = \(x) dbDisconnect(conn))
+
+
 
 # writeLines(graphs$file_result[1], "/tmp/graph.graphml")
