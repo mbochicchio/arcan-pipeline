@@ -37,7 +37,7 @@ fetch_analyses_page <- function(conn, offset = 0, page_size = 5) {
     if (nrow(page) == 0) {
         return(tibble())
     }
-    
+
     q_data <- "SELECT id, HEX(file_result) FROM AnalysisResult WHERE id in "
     q_data <- paste0(q_data, "(", paste0(page$file_result_id, collapse = ","), ")")
 
@@ -169,7 +169,7 @@ save_to_sqlite <- function(db_file_name, data_generator) {
 }
 
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 3) {
+if (length(args) < 2) {
     stop("usage: <output_sqlite> <max_analyses>")
 }
 output_file <- args[1]
