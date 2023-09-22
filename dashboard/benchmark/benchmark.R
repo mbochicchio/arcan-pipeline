@@ -103,11 +103,9 @@ new_data_generator <-
                 df_edges$index <- NULL
 
                 df_nodes <- df_nodes %>%
-                    mutate_if(is.character, as.factor) %>%
                     mutate_if(is.numeric, \(x) replace_na(x, 0))
 
                 df_edges <- df_edges %>%
-                    mutate_if(is.character, as.factor) %>%
                     mutate_if(is.numeric, \(x) replace_na(x, 0))
                 yield(list(nodes = df_nodes, edges = df_edges))
             }
