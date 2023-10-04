@@ -1,8 +1,5 @@
 import pendulum
 from airflow.decorators import dag, task
-from airflow.providers.mysql.hooks.mysql import MySqlHook
-from airflow.models import Connection
-from airflow.models import Variable
 import docker
 from utilities import constants
 from utilities.customException import DockerApiException, BenchmarkImageNotFoundException, BenchmarkExecutionException, DockerException
@@ -14,16 +11,11 @@ import os
 def create_benchmark():
     file_name = f'benchmark_{pendulum.today()}.sqlite'
     n_records = 10
-    conn = Connection.get_connection_from_secrets("mysql")
-    env = {"DATABASE_URL":conn.host, "DATABASE_DB":conn.database, "DATABASE_PORT":conn.port, 
-                "DATABASE_USERNAME":conn.login, "DATABASE_PASSWORD":conn.password}
-    print(env)
     client = docker.from_env()
     try:
         container_name = 'benchmark_container'
         client.containers.run(image="arcan/arcan-benchmark:snapshot", command=[file_name, n_records], user=50000, name=container_name, 
-                              volumes={'arcan-pipeline_benchmark-volume': {'bind': '/benchmarks', 'mode': 'rw'}}, detach=False, mem_limit='4g', 
-                              environment=env)
+                              volumes={'arcan-pipeline_benchmark-volume': {'bind': '/benchmarks', 'mode': 'rw'}}, detach=False, mem_limit='4g')
         return file_name
     except docker.errors.APIError as e:
         raise DockerApiException("Docker API Exception:", e)
