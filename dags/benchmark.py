@@ -1,9 +1,7 @@
-from pendulum import datetime
+import pendulum
 from airflow.decorators import dag, task
 from airflow.providers.mysql.hooks.mysql import MySqlHook
-
 import docker
-import datetime
 from utilities import constants
 from utilities.customException import DockerApiException, BenchmarkImageNotFoundException, BenchmarkExecutionException, DockerException
 import subprocess
@@ -11,7 +9,7 @@ import os
 
 @task()
 def create_benchmark():
-    file_name = f'benchmark_{datetime.datetime.now().strftime("%Y-%m-%d")}.sqlite'
+    file_name = f'benchmark_{pendulum.today()}.sqlite'
     n_records = 10
     mysql_hook = MySqlHook(mysql_conn_id='mysql') 
     with mysql_hook.get_conn() as conn:
@@ -68,7 +66,7 @@ def delete_benchmark(file_name):
 
 @dag( 
     schedule='0 0 2 * *', 
-    start_date=datetime(2023, 1, 1),
+    start_date=pendulum.datetime(2023, 1, 1),
     catchup=False,
     tags=[],
     default_args={

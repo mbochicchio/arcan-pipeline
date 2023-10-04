@@ -3,11 +3,11 @@ import gzip
 
 # Configura la connessione al tuo database
 conn = mysql.connector.connect(
-    host="mysql-bbbe4682-o9a2c7286.database.cloud.ovh.net",
-    user="arcan_benchmark",
-    password="AVNS_9XSOEzSWtqhktIw5x9r",
-    database="benchmark",
-    port="20184"
+    host="",
+    user="",
+    password="",
+    database="",
+    port=""
 )
 
 # Crea un cursore per eseguire comandi SQL
