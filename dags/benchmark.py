@@ -1,24 +1,24 @@
 import pendulum
 from airflow.decorators import dag, task
 from airflow.providers.mysql.hooks.mysql import MySqlHook
+from airflow.models import Connection
+from airflow.models import Variable
 import docker
 from utilities import constants
 from utilities.customException import DockerApiException, BenchmarkImageNotFoundException, BenchmarkExecutionException, DockerException
 import subprocess
 import os
 
+
 @task()
 def create_benchmark():
     file_name = f'benchmark_{pendulum.today()}.sqlite'
     n_records = 10
-    mysql_hook = MySqlHook(mysql_conn_id='mysql') 
-    with mysql_hook.get_conn() as conn:
-        print(conn)
-        conn_config = mysql_hook._get_conn_config_mysql_connector_python(conn)
-        print(conn_config)
-        env = {"DATABASE_URL":conn_config['host'], "DATABASE_DB":conn_config['database'], "DATABASE_PORT":conn_config['port'], 
-               "DATABASE_USERNAME":conn_config['user'], "DATABASE_PASSWORD":conn_config['password']}
-        print(env)
+    conn_id = "mysql"
+    conn = Connection.get_connection_from_secrets(conn_id)
+    env = {"DATABASE_URL":conn.host, "DATABASE_DB":conn.database, "DATABASE_PORT":conn.port, 
+            "DATABASE_USERNAME":conn.login, "DATABASE_PASSWORD":conn.password}
+    print(env)
     client = docker.from_env()
     try:
         container_name = 'benchmark_container'
