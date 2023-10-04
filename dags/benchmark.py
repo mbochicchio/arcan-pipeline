@@ -14,10 +14,10 @@ import os
 def create_benchmark():
     file_name = f'benchmark_{pendulum.today()}.sqlite'
     n_records = 10
-    with Connection.get_connection_from_secrets("mysql") as conn:
-        env = {"DATABASE_URL":conn.host, "DATABASE_DB":conn.database, "DATABASE_PORT":conn.port, 
+    conn = Connection.get_connection_from_secrets("mysql")
+    env = {"DATABASE_URL":conn.host, "DATABASE_DB":conn.database, "DATABASE_PORT":conn.port, 
                 "DATABASE_USERNAME":conn.login, "DATABASE_PASSWORD":conn.password}
-        print(env)
+    print(env)
     client = docker.from_env()
     try:
         container_name = 'benchmark_container'
