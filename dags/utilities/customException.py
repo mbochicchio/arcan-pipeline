@@ -45,3 +45,9 @@ class ArcanExecutionException(Exception):
 
 class MaximumExecutionTimeExeededException(Exception):
     status="MAXIMUM_EXECUTION_TIME_EXCEEDED"
+
+class BenchmarkImageNotFoundException(Exception):
+    pass
+
+class BenchmarkExecutionException(Exception):
+    pass

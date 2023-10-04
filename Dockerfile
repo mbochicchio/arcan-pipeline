@@ -3,4 +3,5 @@ USER root
 RUN apt-get update && apt-get install -y git
 USER airflow
 RUN umask 0002; \
-    mkdir -p projects
+    mkdir -p projects \
+    mkdir -p benchmarks

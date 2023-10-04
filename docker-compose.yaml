@@ -81,6 +81,8 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - shared-volume:/opt/airflow/projects:rw
+    - benchmark_volume:/opt/airflow/benchmarks:rw
+
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -296,6 +298,7 @@ services:
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
       - shared-volume:/opt/airflow/projects:rw
+      - benchmark_volume:/opt/airflow/benchmarks:rw
 
   airflow-cli:
     <<: *airflow-common
@@ -336,5 +339,7 @@ volumes:
   postgres-db-volume:
 #  mysql-db-volume:
   shared-volume:
+  benchmark_volume:
+
 
     
