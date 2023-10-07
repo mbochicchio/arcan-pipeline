@@ -6,17 +6,16 @@ from utilities.customException import DockerApiException, BenchmarkImageNotFound
 import subprocess
 import os
 
-
 @task()
 def create_benchmark():
-    file_name = f'benchmark_{pendulum.today()}.sqlite'
+    file_name = f'benchmark_data'
     n_records = 10
     client = docker.from_env()
     try:
         container_name = 'benchmark_container'
-        client.containers.run(image="arcan/arcan-benchmark:snapshot", command=[file_name, n_records], user=50000, name=container_name, 
-                              volumes={'arcan-pipeline_benchmark-volume': {'bind': '/benchmarks', 'mode': 'rw'}}, detach=False, mem_limit='4g')
-        return file_name
+        client.containers.run(image="arcan/arcan-benchmark:snapshot", command=f'/benchmarks/{file_name} {n_records}', user=50000, name=container_name, 
+                              volumes={'arcan-pipeline_benchmark_volume': {'bind': '/benchmarks', 'mode': 'rw'}}, detach=False, mem_limit='4g')
+        return f'/opt/airflow/benchmarks/{file_name}'
     except docker.errors.APIError as e:
         raise DockerApiException("Docker API Exception:", e)
     except docker.errors.ContainerError as e:     
@@ -37,13 +36,12 @@ def create_benchmark():
 def compress_benchmark(file_name):
     try:
         if os.path.exists(file_name):
-            cmd = f"gzip -c {file_name} > {file_name}.gz"
+            cmd = f"gzip -c {file_name}"
             subprocess.run(cmd, shell=True, check=True, capture_output=True)
         else:
             raise Exception("Benchmark not found") 
     except subprocess.CalledProcessError as e:
         raise Exception(e.stderr, file_name)
-
 
 @task(trigger_rule = 'all_done')
 def delete_benchmark(file_name):
@@ -53,7 +51,6 @@ def delete_benchmark(file_name):
             subprocess.run(cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         raise Exception(e.stderr, file_name)
-
 
 @dag( 
     schedule='0 0 2 * *', 
