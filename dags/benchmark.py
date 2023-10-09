@@ -8,7 +8,7 @@ import os
 
 @task()
 def create_benchmark():
-    file_name = f'benchmark_data'
+    file_name = f'benchmark_{pendulum.now()}'
     n_records = 10
     client = docker.from_env()
     try:
