@@ -36,19 +36,10 @@ def create_benchmark():
 def compress_benchmark(file_name):
     try:
         if os.path.exists(file_name):
-            cmd = f"gzip -c {file_name}"
+            cmd = f"gzip {file_name}"
             subprocess.run(cmd, shell=True, check=True, capture_output=True)
         else:
             raise Exception("Benchmark not found") 
-    except subprocess.CalledProcessError as e:
-        raise Exception(e.stderr, file_name)
-
-@task(trigger_rule = 'all_done')
-def delete_benchmark(file_name):
-    try:
-        if os.path.exists(file_name):
-            cmd = f"delete {file_name}"
-            subprocess.run(cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         raise Exception(e.stderr, file_name)
 
@@ -67,6 +58,6 @@ def delete_benchmark(file_name):
 )
 def benchmark():
     file_name = create_benchmark()
-    compress_benchmark(file_name) >> delete_benchmark(file_name)
+    compress_benchmark(file_name)
 
 benchmark()
