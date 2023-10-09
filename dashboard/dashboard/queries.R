@@ -44,13 +44,13 @@ fetch_analyses_status <- function(conn) {
 
 fetch_analyses_by_day <- function(conn) {
     analyses_by_day <- dbGetQuery(conn, '
-        SELECT date_analysis, is_completed FROM Analysis
+        SELECT date_analysis, status FROM Analysis
     ') %>% as_tibble() %>%
         mutate(date_analysis = as.Date(date_analysis)) %>%
-        mutate(is_completed = as.logical(is_completed)) %>%
+        mutate(status = ifelse(status == "SUCCESSFUL", TRUE, FALSE)) %>%
         mutate(day = as.Date(cut(date_analysis, "day"))) %>%
         mutate_if(is.character, as.factor) %>%
-        group_by(day, is_completed) %>%
+        group_by(day, status) %>%
         tally()
     analyses_by_day
 }

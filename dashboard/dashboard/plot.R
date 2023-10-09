@@ -73,7 +73,7 @@ plot_analysed_total <- function(analyses_status) {
 
 plot_analyses_by_day <- function(analyses_by_day) {
     analyses_by_day %>%
-        mutate(outcome = ifelse(is_completed, "Success", "Failed")) %>%
+        mutate(outcome = ifelse(status, "Success", "Failed")) %>%
         ggplot(aes(day, n, color = outcome)) +
         geom_line(lwd = 1.1) +
         geom_point() +
