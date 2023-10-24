@@ -2,6 +2,8 @@
 
 An Airflow-based pipeline designed for the continuous analysis of GitHub repositories using the Arcan tool.
 
+You can check the progress of the pipeline [here](http://benchmark.arcan.tech:5001/) (link may be blocked by certain organisations as it is running on a port different than the standard).
+
 ## Table of Contents
 - [Goal](#Goal)
 - [Implementation](#Implementation)
