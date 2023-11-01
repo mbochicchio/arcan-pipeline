@@ -70,37 +70,40 @@ def upload_to_zenodo(dataset):
                     headers=headers)
     print(r.json())
 
-    bucket_url = r.json()["links"]["bucket"]
-    deposition_id = r.json()["id"]
+    if(r.status_code == 201):
+        print("Deposition created")
+        bucket_url = r.json()["links"]["bucket"]
+        deposition_id = r.json()["id"]
 
-    print("Uploading file")
-    with open(dataset['path'], "rb") as fp:
-        r = requests.put(
-            "%s/%s" % (bucket_url, dataset['name']),
-            data=fp,
-            params=params,
-        )
-    print(r.json())
-
-    print("Uploading metadata")
-    data = {
-        'metadata': {
-            'title': 'Dataset from Arcan Pipeline at %s' % dataset['date'],
-            'upload_type': 'Dataset',
-            'description': 'This is a dataset from Arcan Pipeline at %s' % dataset['date'],
-            'creators': [{'name': 'Arcan Tech', 
-                        'affiliation': 'Arcan Tech'}]
-        }
-    }
-    r = requests.put('https://zenodo.org/api/deposit/depositions/%s' % deposition_id,
-                    params={'access_token': access_token}, data=json.dumps(data),
-                    headers=headers)
-    print(r.json())
-
-    #print("Publishing")
-    #r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % deposition_id,
-    #                      params={'access_token': ACCESS_TOKEN} )
-    #print(r.json())
+        print("Uploading file")
+        with open(dataset['path'], "rb") as fp:
+            r = requests.put(
+                "%s/%s" % (bucket_url, dataset['name']),
+                data=fp,
+                params=params,
+            )
+        print(r.json())
+        if(r.status_code == 200):
+            print("File uploaded")
+            print("Uploading metadata")
+            data = {
+                'metadata': {
+                    'title': 'Dataset from Arcan Pipeline at %s' % dataset['date'],
+                    'upload_type': 'dataset',
+                    'description': 'This is a dataset from Arcan Pipeline at %s' % dataset['date'],
+                    'creators': [{'name': 'Arcan Tech', 
+                                'affiliation': 'Arcan Tech'}]
+                }
+            }
+            r = requests.put('https://zenodo.org/api/deposit/depositions/%s' % deposition_id,
+                            params={'access_token': access_token}, data=json.dumps(data),
+                            headers=headers)
+            print(r.json())
+            #print("Publishing")
+            #r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % deposition_id,
+            #                      params={'access_token': ACCESS_TOKEN} )
+            #print(r.json())
+    return dataset
 
 @task(trigger_rule = 'all_done')
 def delete_local_dataset(dataset):
