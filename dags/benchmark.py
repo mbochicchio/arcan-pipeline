@@ -58,9 +58,7 @@ def compress_benchmark(dataset):
 
 @task(trigger_rule = 'all_success')
 def upload_to_zenodo(dataset):
-
     access_token = Variable.get('zenodo_access_token')
-
     print("Creating a new deposition")
     headers = {"Content-Type": "application/json"}
     params = {'access_token': access_token}
@@ -69,12 +67,10 @@ def upload_to_zenodo(dataset):
                     json={},
                     headers=headers)
     print(r.json())
-
     if(r.status_code == 201):
         print("Deposition created")
         bucket_url = r.json()["links"]["bucket"]
         deposition_id = r.json()["id"]
-
         print("Uploading file")
         with open(dataset['path'], "rb") as fp:
             r = requests.put(
@@ -99,9 +95,8 @@ def upload_to_zenodo(dataset):
                             params={'access_token': access_token}, data=json.dumps(data),
                             headers=headers)
             print(r.json())
-
-#            if(r.status_code == 200):
-#                print("Metadata uploaded")
+            if(r.status_code == 200):
+                print("Metadata uploaded")
 #                print("Publishing")
 #                r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % deposition_id,
 #                                    params={'access_token': access_token} )
@@ -112,7 +107,12 @@ def upload_to_zenodo(dataset):
 #                    return dataset
 #                else:
 #                    raise Exception("Dataset not published")
-
+            else:
+                raise Exception("Metadata not uploaded", r.json())
+        else:
+            raise Exception("File not uploaded", r.json())
+    else:
+        raise Exception("Deposition not created", r.json())    
     return dataset
 
 @task(trigger_rule = 'all_done')
@@ -126,7 +126,7 @@ def delete_local_dataset(dataset):
         raise DeleteDirException(e.stderr, path) 
     
 @dag( 
-    schedule='0 0 2 * *', 
+    schedule='0 0 6 * *', 
     start_date=pendulum.datetime(2023, 1, 1),
     catchup=False,
     tags=[],
@@ -141,6 +141,7 @@ def delete_local_dataset(dataset):
 def benchmark():
     dataset = create_benchmark()
     compress_dataset = compress_benchmark(dataset)
-    dataset_to_delete = upload_to_zenodo(compress_dataset)
-    delete_local_dataset(dataset_to_delete)
+    upload_to_zenodo_task = upload_to_zenodo(compress_dataset)
+    delete_local_dataset_task = delete_local_dataset(compress_dataset)
+    upload_to_zenodo_task >> delete_local_dataset_task
 benchmark()
