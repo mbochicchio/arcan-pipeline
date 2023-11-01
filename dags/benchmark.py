@@ -83,7 +83,7 @@ def upload_to_zenodo(dataset):
                 params=params,
             )
         print(r.json())
-        if(r.status_code == 200):
+        if(r.status_code == 201):
             print("File uploaded")
             print("Uploading metadata")
             data = {
@@ -99,10 +99,20 @@ def upload_to_zenodo(dataset):
                             params={'access_token': access_token}, data=json.dumps(data),
                             headers=headers)
             print(r.json())
-            #print("Publishing")
-            #r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % deposition_id,
-            #                      params={'access_token': ACCESS_TOKEN} )
-            #print(r.json())
+
+#            if(r.status_code == 200):
+#                print("Metadata uploaded")
+#                print("Publishing")
+#                r = requests.post('https://zenodo.org/api/deposit/depositions/%s/actions/publish' % deposition_id,
+#                                    params={'access_token': access_token} )
+#                print(r.json())
+#                if(r.status_code == 202):
+#                    print("Dataset published")
+#                    dataset["zenodo_id"] = deposition_id
+#                    return dataset
+#                else:
+#                    raise Exception("Dataset not published")
+
     return dataset
 
 @task(trigger_rule = 'all_done')
