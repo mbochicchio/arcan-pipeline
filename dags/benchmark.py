@@ -1,6 +1,7 @@
 import pendulum
 from airflow.decorators import dag, task
 from airflow.models import Variable
+from airflow.utils.email import send_email
 import docker
 from utilities import constants
 from utilities.customException import DeleteDirException, DockerApiException, BenchmarkImageNotFoundException, BenchmarkExecutionException, DockerException
@@ -8,6 +9,8 @@ import subprocess
 import os
 import requests
 import json
+
+ARCAN_EMAIL = Variable.get('arcan_email')
 
 
 @task()
@@ -42,19 +45,22 @@ def create_benchmark():
             print(line)
         container.remove()
 
-@task(trigger_rule = 'all_success')
+@task(trigger_rule = 'all_success', email_on_failure=True, email=ARCAN_EMAIL)
 def compress_benchmark(dataset):
     try:
         if os.path.exists(dataset["path"]):
             cmd = f"gzip {dataset['path']}"
             subprocess.run(cmd, shell=True, check=True, capture_output=True)
-            dataset["name"] = f"{dataset['name']}.gz"
-            dataset["path"] = f"{dataset['path']}.gz"
-            return dataset
+            compressed_dataset = {
+                "name": f"{dataset['name']}.gz",
+                "path": f"{dataset['path']}.gz",
+                "date": dataset["date"],
+            }
+            return compressed_dataset
         else:
             raise Exception("Benchmark not found") 
     except subprocess.CalledProcessError as e:
-        raise Exception(e.stderr, dataset["name"])
+        raise Exception(e.stderr, compressed_dataset["name"])
 
 @task(trigger_rule = 'all_success')
 def upload_to_zenodo(dataset):
@@ -124,7 +130,20 @@ def delete_local_dataset(dataset):
             subprocess.run(rmdir_cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         raise DeleteDirException(e.stderr, path) 
-    
+
+@task(trigger_rule = 'all_success')
+def send_successful_email(dataset):
+    msg = f"Dataset from Arcan Pipeline at {dataset['date']} uploaded to Zenodo"
+    subject = f"Dataset from Arcan Pipeline at {dataset['date']} uploaded to Zenodo"
+    send_email(to=ARCAN_EMAIL, subject=subject, html_content=msg)
+
+@task(trigger_rule = 'all_failed')
+def send_failed_email():
+    msg = "Benchmark pipeline has recently failed. Please check the logs on Airflow and restart the pipeline"
+    subject = "Benchmark pipeline failed"
+    send_email(to=ARCAN_EMAIL, subject=subject, html_content=msg)
+
+
 @dag( 
     schedule='0 0 6 * *', 
     start_date=pendulum.datetime(2023, 1, 1),
@@ -142,6 +161,12 @@ def benchmark():
     dataset = create_benchmark()
     compress_dataset = compress_benchmark(dataset)
     upload_to_zenodo_task = upload_to_zenodo(compress_dataset)
-    delete_local_dataset_task = delete_local_dataset(compress_dataset)
-    upload_to_zenodo_task >> delete_local_dataset_task
+    delete_dataset_task = delete_local_dataset(dataset)
+    delete_compressed_dataset_task = delete_local_dataset(compress_dataset)
+    send_successful_email_task = send_successful_email(dataset)
+    send_failed_email_task = send_failed_email()
+    upload_to_zenodo_task >> delete_compressed_dataset_task
+    upload_to_zenodo_task >> delete_dataset_task
+    upload_to_zenodo_task >> send_successful_email_task
+    upload_to_zenodo_task >> send_failed_email_task
 benchmark()

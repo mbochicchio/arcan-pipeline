@@ -65,6 +65,14 @@ x-airflow-common:
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    # For sending email
+    AIRFLOW__SMTP__SMTP_HOST: ${_SMTP_HOST}
+    AIRFLOW__SMTP__SMTP_STARTTLS: ${_SMTP_STARTTLS:-false}
+    AIRFLOW__SMTP__SMTP_SSL: ${_SMTP_SSL:-false}
+    AIRFLOW__SMTP__SMTP_USER: ${_SMTP_USER}
+    AIRFLOW__SMTP__SMTP_PASSWORD: ${_SMTP_PASSWORD}
+    AIRFLOW__SMTP__SMTP_PORT: ${_SMTP_PORT}
+    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${_SMTP_MAIL_FROM}
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
@@ -73,9 +81,9 @@ x-airflow-common:
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
-    # limitare processo di parsing dei dag ogni 24 ore
-    AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 86400
-    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 86400 
+    # limitare processo di parsing dei file dag a 1 minuto
+    AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 60
+    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 300 
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
