@@ -90,11 +90,19 @@ def upload_to_zenodo(dataset):
             print("Uploading metadata")
             data = {
                 'metadata': {
-                    'title': 'Dataset from Arcan Pipeline at %s' % dataset['date'],
+                    'title': 'Technical Debt Dataset from Arcan Pipeline on %s' % dataset['date'],
                     'upload_type': 'dataset',
-                    'description': 'This is a dataset from Arcan Pipeline at %s' % dataset['date'],
-                    'creators': [{'name': 'Arcan Tech', 
-                                'affiliation': 'Arcan Tech'}]
+                    'description': 'The dataset of the study "A continuous open source data collection platform for architectural technical debt assessment.',
+                    'creators': [
+                        {'name': 'Darius Sas', 
+                            'affiliation': 'Arcan SRL'},
+                        {'name': 'Alessandro Gilardi', 
+                            'affiliation': 'University of Milano-Bicocca'},
+                        {'name': 'Ilaria Pigazzini', 
+                            'affiliation': 'Arcan SRL'},
+                        {'name': 'Francesca Arcelli Fontana', 
+                            'affiliation': 'University of Milano-Bicocca'},
+                        ]
                 }
             }
             r = requests.put('https://zenodo.org/api/deposit/depositions/%s' % deposition_id,
