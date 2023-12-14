@@ -153,7 +153,7 @@ def send_failed_email():
 
 
 @dag( 
-    schedule='0 0 6 * *', 
+    schedule='0 0 1 */6 *', 
     start_date=pendulum.datetime(2023, 1, 1),
     catchup=False,
     tags=[],
