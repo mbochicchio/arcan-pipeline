@@ -44,7 +44,7 @@
 #
 # Feel free to modify this file to suit your needs.
 ---
-version: '3.8'
+# version: '3.8'
 
 x-airflow-common:
   &airflow-common
@@ -157,7 +157,7 @@ services:
     <<: *airflow-common
     command: webserver
     ports:
-      - "5000:8080"
+      - "5001:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
