@@ -1,3 +1,5 @@
+-- This script initializes the database schema for the pipeline.
+
 CREATE TABLE IF NOT EXISTS ArcanVersion (
     id int NOT NULL AUTO_INCREMENT,
     date_of_release datetime,

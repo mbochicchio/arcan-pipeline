@@ -60,7 +60,7 @@ Note: Depending on your OS, you may need to configure Docker to use at least 4.0
 To configure Airflow:
 
 1. Access the Airflow web interface.
-2. Create a new connection with the ID 'mysql' in the [connection management](https://airflow.apache.org/docs/apache-airflow/stable/howto/connection.html) by entering the relevant MySQL server details.
+2. Create a new connection with the ID 'mysql' in the [connection management](https://airflow.apache.org/docs/apache-airflow/stable/howto/connection.html) by entering the relevant MySQL server details. You need to define a database for the pipeline. In the `init` folder, you will find the SQL instructions required to initialize the database. When connecting to the local MySQL database, make sure to provide all mandatory information, including the reference schema (i.e., the name of the database to use). Note that the host name should correspond to the application running inside a Docker container, not to a local instance.
 3. Create variables 'git_token' and 'git_username' in the [variable management](https://airflow.apache.org/docs/apache-airflow/stable/howto/variable.html) and populate them with the appropriate data.
 4. Create the 'docker_run_pool' in the [pool management](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/pools.html) by specifying the maximum number of Docker containers that can run in parallel.
 
