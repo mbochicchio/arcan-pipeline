@@ -1,160 +1,130 @@
 """
 collect_repo_urls.py
 
-This script collects GitHub repository URLs using the GitHub GraphQL API (v4).
-It is designed to overcome the 1000-result limitation of GitHub's search API
-by segmenting queries into star-count ranges.
+This script queries the GitHub GraphQL API to retrieve repositories written in Python, Java, or C#,
+filtered by a minimum of 10 stars and excluding forks. It saves the full repository name (owner/repo),
+URL, stargazer count, and programming language to a CSV file named 'repository_list_urls.csv'.
 
-Features:
-- Filters repositories by programming language (Java, Python, C#),
-  star count (>=10), and excludes forks.
-- Uses GraphQL pagination to retrieve up to thousands of repositories per language.
-- Supports a --test mode that limits the output to just 10 repositories,
-  useful for debugging or quick dry runs.
-- Stores the collected URLs in a plain text file (`repo_urls.txt`),
-  with one URL per line and no duplicates.
-- Requires a GitHub personal access token provided in a `.env` file.
-
-Usage:
-    python collect_repo_urls.py          # Full run
-    python collect_repo_urls.py --test   # Test run (10 repositories max)
+The script supports a '--test' flag that limits the output to 10 repositories total for debugging purposes.
+It uses GraphQL pagination with star buckets to overcome GitHub's 1000-result limitation per query.
 
 Requirements:
-    - requests
     - python-dotenv
-    - A `.env` file with: GITHUB_TOKEN=your_personal_access_token
+    - requests
+
+Environment:
+    - Requires a .env file with a GITHUB_TOKEN entry.
+
+Usage:
+    python collect_repo_urls.py
+    python collect_repo_urls.py --test
 """
 
-import requests
 import os
-import time
+import csv
 import argparse
+import requests
 from dotenv import load_dotenv
 
-# -------------------------
-# Load GitHub token from .env
-# -------------------------
 load_dotenv()
-TOKEN = os.getenv("GITHUB_TOKEN")
-if not TOKEN:
-    raise RuntimeError("GitHub token not found in .env file")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
-HEADERS = {"Authorization": f"Bearer {TOKEN}"}
-GRAPHQL_URL = "https://api.github.com/graphql"
+if not GITHUB_TOKEN:
+    raise RuntimeError("GitHub token not found in .env")
 
-# -------------------------
-# Configuration
-# -------------------------
-LANGUAGES = ["Java", "Python", "C#"]
-STARS_RANGES = [
-    "stars:500..1000",
-    "stars:200..499",
-    "stars:100..199",
-    "stars:50..99",
-    "stars:25..49",
-    "stars:10..24"
-]
-MAX_REPOS_PER_RANGE = 1000  # GitHub limit per search query
-MAX_REPOS_TOTAL = 5000      # Cap per language in full mode
-OUTPUT_FILE = "repo_urls.txt"
-
-GRAPHQL_QUERY = """
-query ($queryString: String!, $after: String) {
-  search(query: $queryString, type: REPOSITORY, first: 100, after: $after) {
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    nodes {
-      ... on Repository {
-        url
-        stargazerCount
-        primaryLanguage {
-          name
-        }
-        isFork
-      }
-    }
-  }
+HEADERS = {
+    "Authorization": f"Bearer {GITHUB_TOKEN}"
 }
-"""
 
-# -------------------------
-# Collect repositories for a language and a stars range
-# -------------------------
-def collect_repos_for_range(language, stars_range, max_per_range, global_limit):
-    print(f"🔎  Querying: language={language}, {stars_range}")
-    collected_urls = []
-    variables = {
-        "queryString": f"language:{language} {stars_range} fork:false",
-        "after": None
-    }
+LANGUAGES = ["Python", "Java", "CSharp"]
+MIN_STARS = 10
+OUTPUT_CSV = "repository_list_urls.csv"
 
-    while len(collected_urls) < max_per_range and len(collected_urls) < global_limit:
-        response = requests.post(
-            GRAPHQL_URL,
-            json={"query": GRAPHQL_QUERY, "variables": variables},
-            headers=HEADERS
-        )
+# Define star buckets to paginate around the 1000 result GraphQL limitation
+STAR_BUCKETS = [
+    (100000, 50000), (49999, 20000), (19999, 10000), (9999, 5000),
+    (4999, 2000), (1999, 1000), (999, 500), (499, 100), (99, MIN_STARS)
+]
 
-        if response.status_code != 200:
-            raise Exception(f"GraphQL query failed: {response.text}")
+def run_query(query):
+    response = requests.post(
+        "https://api.github.com/graphql",
+        json={"query": query},
+        headers=HEADERS
+    )
+    if response.status_code != 200:
+        raise Exception(f"Query failed: {response.text}")
+    return response.json()
 
-        data = response.json()["data"]["search"]
-        for repo in data["nodes"]:
-            if not repo["isFork"]:
-                collected_urls.append(repo["url"])
-                if len(collected_urls) >= global_limit:
-                    break
+def fetch_repositories(language, test_mode):
+    repos = []
+    for upper, lower in STAR_BUCKETS:
+        cursor = None
+        while True:
+            after_clause = f', after: "{cursor}"' if cursor else ""
+            query = f"""
+            {{
+              search(query: "language:{language} stars:{lower}..{upper} fork:false", type: REPOSITORY, first: 100{after_clause}) {{
+                pageInfo {{
+                  endCursor
+                  hasNextPage
+                }}
+                edges {{
+                  node {{
+                    ... on Repository {{
+                      nameWithOwner
+                      url
+                      stargazerCount
+                    }}
+                  }}
+                }}
+              }}
+            }}
+            """
+            result = run_query(query)
+            data = result["data"]["search"]
 
-        if not data["pageInfo"]["hasNextPage"]:
-            break
+            for edge in data["edges"]:
+                repo = edge["node"]
+                repos.append({
+                    "name": repo["nameWithOwner"],
+                    "url": repo["url"],
+                    "stars": repo["stargazerCount"],
+                    "language": language
+                })
+                if test_mode and len(repos) >= 10:
+                    return repos
 
-        variables["after"] = data["pageInfo"]["endCursor"]
-        time.sleep(0.5)
-
-    return collected_urls
-
-# -------------------------
-# Main function
-# -------------------------
-def main(test_mode=False):
-    total_limit_per_lang = 10 if test_mode else MAX_REPOS_TOTAL
-    all_urls = []
-
-    for lang in LANGUAGES:
-        lang_urls = []
-        for stars_range in STARS_RANGES:
-            if len(lang_urls) >= total_limit_per_lang:
+            if not data["pageInfo"]["hasNextPage"]:
                 break
-            urls = collect_repos_for_range(
-                language=lang,
-                stars_range=stars_range,
-                max_per_range=MAX_REPOS_PER_RANGE,
-                global_limit=total_limit_per_lang - len(lang_urls)
-            )
-            lang_urls.extend(urls)
+            cursor = data["pageInfo"]["endCursor"]
 
-        all_urls.extend(lang_urls)
-        print(f"✅ Collected {len(lang_urls)} repositories for {lang}")
+            if test_mode and len(repos) >= 10:
+                return repos
+    return repos
 
-        if test_mode and len(all_urls) >= 10:
-            all_urls = all_urls[:10]
+def main(test_mode=False):
+    all_repos = []
+    for lang in LANGUAGES:
+        print(f"Fetching repositories for language: {lang}")
+        repos = fetch_repositories(lang, test_mode)
+        all_repos.extend(repos)
+        if test_mode and len(all_repos) >= 10:
             break
 
-    # Save results
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        for url in sorted(set(all_urls)):
-            f.write(url + "\n")
+    all_repos = all_repos[:10] if test_mode else all_repos
 
-    print(f"\n🎉 Finished! {len(all_urls)} repository URLs saved to {OUTPUT_FILE}")
+    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["name", "url", "stars", "language"])
+        writer.writeheader()
+        writer.writerows(all_repos)
 
-# -------------------------
-# Command-line interface
-# -------------------------
+    print(f"\n✅ Fetched {len(all_repos)} repositories. Saved to '{OUTPUT_CSV}'")
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Collect GitHub repository URLs via GraphQL API with star-range segmentation.")
-    parser.add_argument("--test", action="store_true", help="Run in test mode (limit to 10 repositories)")
+    parser = argparse.ArgumentParser(description="Fetch GitHub repositories using GraphQL API.")
+    parser.add_argument("--test", action="store_true", help="Fetch only 10 repositories total for testing.")
     args = parser.parse_args()
 
     main(test_mode=args.test)
+
