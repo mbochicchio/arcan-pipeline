@@ -271,6 +271,6 @@ $RECYCLE.BIN/
 logs/scheduler/latest
 
 # Temp analysis files
-script/*.csv
-script/*.txt
-script/*.json
+scripts/*.csv
+scripts/*.txt
+scripts/*.json
