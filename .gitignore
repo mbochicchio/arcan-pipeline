@@ -269,3 +269,8 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,visualstudiocode,windows,linux
 logs/scheduler/latest
+
+# Temp analysis files
+script/*.csv
+script/*.txt
+script/*.json
