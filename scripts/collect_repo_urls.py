@@ -10,10 +10,6 @@ The script uses a pagination strategy with defined star ranges (buckets)
 to bypass the GitHub GraphQL API’s 1000-item search limit. The '--test'
 flag allows running in debug mode, saving only 10 repositories in total.
 
-Requirements:
-    - python-dotenv
-    - requests
-
 Environment:
     - A .env file containing a GitHub personal access token:
         GITHUB_TOKEN=your_token_here
