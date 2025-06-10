@@ -2,14 +2,13 @@
 
 An Airflow-based pipeline designed for the continuous analysis of GitHub repositories using the Arcan tool.
 
-
 ## Table of Contents
-- [Goal](#Goal)
-- [Implementation](#Implementation)
-- [Installation](#Installation)
-- [Usage](#Usage)
-- [Limitations](#Limitations)
 
+- [Goal](#goal)
+- [Implementation](#implementation)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Limitations](#limitations)
 
 ## Goal
 
@@ -19,9 +18,8 @@ The primary goal of this pipeline is to regularly conduct software analysis usin
 2. Running Arcan to perform reverse engineering on the projects and storing the output in a database.
 3. Executing Arcan to analyze the technical debt of the projects and storing the output in a database.
 
-
-
 ## Implementation
+
 The general workflow can be divided into two separate and independent pipelines, each consisting of a set of well-defined steps.
 
 The first pipeline, Ingestion, is responsible for retrieving new versions for each project from the database, acquiring them from GitHub, and selecting those that need to be analyzed. It then stores these selected versions back into the database. This process ensures that the list of versions available for subsequent analysis remains up-to-date.
@@ -84,4 +82,3 @@ Please be aware of the following limitations:
 - There's a limitation of 1024 concurrent tasks in Airflow, with a maximum of 5 Docker containers running simultaneously.
 - In the Ingestion pipeline, the rate limit of the GitHub REST API can affect the pipeline's responsiveness. Consider using GitHub WebHooks for real-time notifications.
 - In the Execution pipeline, the analysis and parsing tasks are limited to 4 hours, and some tasks may fail due to resource constraints.
-
