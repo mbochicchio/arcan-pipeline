@@ -59,3 +59,13 @@ CREATE TABLE IF NOT EXISTS Analysis (
     FOREIGN KEY (project_version) REFERENCES Version(id) ON DELETE CASCADE,
     FOREIGN KEY (arcan_version) REFERENCES ArcanVersion(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS Parsing (
+    id int NOT NULL AUTO_INCREMENT,
+    date_parsing datetime,
+    project_version int,
+    status varchar(255),
+    file_result longblob,
+    PRIMARY KEY (id),
+    FOREIGN KEY (project_version) REFERENCES Version(id) ON DELETE CASCADE
+);
