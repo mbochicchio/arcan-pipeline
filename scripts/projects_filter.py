@@ -38,9 +38,9 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_API_URL = "https://api.github.com/repos/"
 
 # Load the CSV file containing the project data
-input_file = 'repo_quester_results.csv'  # Replace with your input CSV file
-output_file = 'filtered_projects_with_details.csv'  # Output file with the new columns
-THRESHOLD = 5  # Number of metrics greater than 0 required for a project to be kept
+input_file = 'repo_quester_results.csv'
+output_file = 'filtered_projects.csv' 
+THRESHOLD = 5 
 
 # Load the data into a pandas DataFrame
 print(f"Loading data from {input_file}...")
