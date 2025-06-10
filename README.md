@@ -52,6 +52,7 @@ Before proceeding with the installation, ensure you have the following prerequis
 3. Run `docker compose build` in your terminal.
 4. Execute `docker compose up airflow-init` in your terminal.
 5. Start the platform by running `docker compose up`.
+Default: <http://localhost:5001/>
 
 Note: Depending on your OS, you may need to configure Docker to use at least 4.00 GB of memory for the Airflow containers to run properly.
 
