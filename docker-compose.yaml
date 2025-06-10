@@ -90,6 +90,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - shared-volume:/opt/airflow/projects:rw
     - benchmark_volume:/opt/airflow/benchmarks:rw
+    - /var/run/docker.sock:/var/run/docker.sock
 
   depends_on:
     &airflow-common-depends-on
