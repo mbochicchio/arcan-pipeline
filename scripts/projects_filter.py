@@ -47,6 +47,17 @@ print(f"Loading data from {input_file}...")
 df = pd.read_csv(input_file)
 print(f"Data loaded successfully. Number of projects: {len(df)}")
 
+# Convert all values in the "language" column from "Python" to "PYTHON", "Java" to "JAVA", and "C#" to "CSHARP"
+# This is to ensure consistency with Arcan's language names
+if 'language' in df.columns:
+    print("Converting 'Python' to 'PYTHON' in the 'language' column...")
+    df['language'] = df['language'].replace('Python', 'PYTHON')
+    print("Converting 'Java' to 'JAVA' in the 'language' column...")
+    df['language'] = df['language'].replace('Java', 'JAVA')
+    print("Converting 'C#' to 'CSHARP' in the 'language' column...")
+    df['language'] = df['language'].replace('C#', 'CSHARP')
+    print("Conversion completed.")
+
 # Define the columns corresponding to the metrics
 metrics_columns = ['community', 'documentation', 
                    'history', 'license', 'unit_test', 'pull', 'releases']
