@@ -204,7 +204,6 @@ services:
       # Required to handle warm shutdown of the celery workers properly
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"
-      DOCKER_HOST: ${_DOCKER_HOST}
 
     restart: always
     extra_hosts: 
