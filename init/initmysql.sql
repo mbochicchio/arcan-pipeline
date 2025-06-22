@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS Analysis (
     file_result longblob,
     project_version int,
     arcan_version int,
+    status VARCHAR(255),
     PRIMARY KEY (id),
     FOREIGN KEY (project_version) REFERENCES Version(id) ON DELETE CASCADE,
     FOREIGN KEY (arcan_version) REFERENCES ArcanVersion(id) ON DELETE CASCADE
