@@ -1,0 +1,43 @@
+# -----------------------------------------------------------------------------
+# Dockerfile based on the official Arcan image.
+# 
+# Purpose:
+# This custom image adds support for LightGBM's JNI bindings by compiling
+# lib_lightgbm_swig.so from source directly inside the container.
+# This is necessary to ensure compatibility with ARM64 (Apple Silicon),
+# since the precompiled versions of the library target AMD64 and cause
+# runtime errors due to architecture mismatch.
+#
+# Summary of customizations:
+# - Install required build tools (git, cmake, swig, etc.)
+# - Manually install CMake >= 3.28 (required by latest LightGBM)
+# - Clone and compile LightGBM with SWIG support
+# - Copy lib_lightgbm_swig.so into /tmp (as required by Arcan)
+# - Set LD_LIBRARY_PATH to include /tmp for dynamic linking
+# -----------------------------------------------------------------------------
+
+FROM arcan:latest
+
+# Installa strumenti per build, escluso cmake (che installeremo dopo)
+RUN apt-get update && apt-get install -y \
+    git build-essential python3-dev swig openjdk-17-jdk curl unzip \
+    && apt-get clean
+
+# Installa cmake >= 3.28 da kitware.com (versione ARM64)
+RUN curl -LO https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-aarch64.sh && \
+    chmod +x cmake-3.28.3-linux-aarch64.sh && \
+    ./cmake-3.28.3-linux-aarch64.sh --skip-license --prefix=/usr/local && \
+    rm cmake-3.28.3-linux-aarch64.sh
+
+# Clona e compila LightGBM
+RUN git clone --recursive https://github.com/microsoft/LightGBM /opt/lightgbm && \
+    cd /opt/lightgbm && mkdir build && cd build && \
+    cmake -DUSE_SWIG=ON .. && \
+    make -j$(nproc)
+
+# Copia la libreria compilata in /tmp (dove Arcan la cerca)
+RUN cp /opt/lightgbm/lib_lightgbm_swig.so /tmp/
+
+# Imposta il path delle librerie per Java (e il sistema)
+ENV LD_LIBRARY_PATH=/tmp
+
